@@ -3,7 +3,8 @@
  * Kept in one place so a test run from any directory finds them.
  */
 const path = require('path');
-const REPO = path.resolve(__dirname, '..', '..', '..');
+// preview/ sits at the repo root, so the root is two levels up from tests/.
+const REPO = path.resolve(__dirname, '..', '..');
 
 module.exports = {
   REPO,

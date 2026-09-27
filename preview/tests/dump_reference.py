@@ -28,7 +28,8 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[3]
+# preview/tests/ -> preview/ -> repo root
+REPO = Path(__file__).resolve().parents[2]
 COMP_DECOMP = REPO / "Fogg" / "comp_decomp.py"
 
 

@@ -2,6 +2,9 @@
 
 Two HTML5 Canvas previews for G6 / Trek 1 watchfaces, sharing one decoder.
 
+This directory sits at the repository root and works on any dial — it is not tied
+to the cat-gauge package. See the [repo README](../README.md) for the rest.
+
 | Page | Use it for |
 |---|---|
 | `index.html` | **Looking at a dial.** Drop in any `.bin` and it decodes in the browser. |
@@ -181,13 +184,16 @@ re-check.
 ```bash
 node tests/bin-decoder.test.js     # 82 checks: header, RLE, geometry, errors
 node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
-python3 tests/browser/render.test.py  # 33 checks: real Chromium, real pixels
+python3 tests/browser/render.test.py    # 33 checks: index.html in real Chromium
+python3 tests/browser/authoring.test.py # 7 checks: authoring.html boots, assets resolve
 node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
 ```
 
 The Python parity check needs Pillow and numpy; the rest do not. The browser
-test needs Playwright, and starts its own http server because `getImageData`
-is tainted under `file://`.
+tests need Playwright, and start their own http server because `getImageData`
+is tainted under `file://`. `authoring.test.py` serves the **repo root**, not
+`preview/`, because the page reaches up with `../` for its reference image and
+that has to resolve the same way it does under `file://`.
 
 `tests/golden.json` holds per-block checksums so a change in the decoder shows
 up as a test failure rather than a silently different preview. Regenerate with
@@ -207,7 +213,7 @@ up as a test failure rather than a silently different preview. Regenerate with
 ## File structure
 
 ```
-preview/
+preview/                   # repository root
 ├── index.html            # Open a .bin
 ├── authoring.html        # Swappable art against fixed geometry
 ├── bin-decoder.js        # .bin → blocks
@@ -225,7 +231,9 @@ preview/
 │   ├── dump_reference.py      # the Python oracle
 │   ├── fixtures.js
 │   ├── golden.json
-│   └── browser/render.test.py
+│   └── browser/
+│       ├── render.test.py       # index.html in Chromium
+│       └── authoring.test.py    # authoring.html in Chromium
 ├── *-smoke.html          # authoring.html smoke tests
 └── assets/               # authoring.html's layer images
 ```

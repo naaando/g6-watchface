@@ -21,8 +21,9 @@ import sys
 import threading
 from pathlib import Path
 
+# tests/browser/ -> tests/ -> preview/ -> repo root
 PREVIEW = Path(__file__).resolve().parents[2]
-REPO = Path(__file__).resolve().parents[4]
+REPO = Path(__file__).resolve().parents[3]
 
 # Dials to check, in the order they are exercised.
 DIALS = [

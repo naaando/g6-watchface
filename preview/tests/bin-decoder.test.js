@@ -267,7 +267,7 @@ for (const [label, file] of DIALS) {
 
   if (update) {
     golden[label] = {
-      file: path.relative(path.resolve(__dirname, '..', '..', '..'), file),
+      file: path.relative(path.resolve(__dirname, '..', '..'), file),
       blocks: dial.blocks.map((b) => ({
         name: b.name,
         w: b.width,

@@ -10,7 +10,6 @@ Este pacote contém o watchface de teste inspirado no medidor do Need for Speed 
 - `preview-digital-concept.png`: conceito visual com hora digital; os dígitos ainda não estão no BIN analógico.
 - `assets/`: fundo, ponteiros, sprites e descrição do dial.
 - `source/`: script e descrição usados na compilação.
-- `preview/`: sistema de prévia em canvas (HTML/JS) com validação de assets.
 - `sender/`: projeto-fonte do APK, sem `build/` e sem caminhos locais do SDK.
 - `KNOWLEDGE.md`: conhecimento técnico consolidado e limites conhecidos.
 
@@ -18,21 +17,24 @@ Este pacote contém o watchface de teste inspirado no medidor do Need for Speed 
 
 ### 1. Editar a prévia (opcional)
 
-Abra `preview/index.html` em um navegador para visualizar e ajustar o watchface interativamente.
+O sistema de prévia fica em `preview/`, na raiz do repositório — não é específico deste pacote.
 
 ```bash
 # A partir da raiz do projeto
-open g6-cat-gauge-transfer/preview/index.html
+open preview/index.html     # abre qualquer .bin, decodifica no navegador
+open preview/authoring.html # troca a arte contra uma geometria fixa, antes de compilar
 ```
 
-A prévia usa `config.js` (posições, dimensões e rotações) e os assets em `preview/assets/`. Para modificar o visual, edite os PNGs em `preview/assets/` e ajuste `config.js` conforme necessário.
+`authoring.html` usa `config.js` (posições, dimensões e rotações) e os assets em `preview/assets/`. Para modificar o visual, edite os PNGs em `preview/assets/` e ajuste `config.js` conforme necessário.
+
+`index.html` é o caminho rápido para conferir o resultado: escolha o `.bin` e ele é lido direto no navegador, sem etapa de conversão.
 
 ### 2. Validar assets da prévia
 
 Antes de compilar, verifique se todos os assets estão corretos e consistentes com o `dial_desc.json`:
 
 ```bash
-python3 g6-cat-gauge-transfer/preview/validate-preview-assets.py
+python3 preview/validate-preview-assets.py
 ```
 
 Saída esperada: `preview assets: PASS`
@@ -48,7 +50,7 @@ O script verifica:
 Copie os PNGs de `preview/assets/` para `assets/` (o diretório usado pelo compilador):
 
 ```bash
-cp preview/assets/*.png assets/
+cp ../preview/assets/*.png assets/
 ```
 
 ### 4. Compilar o BIN

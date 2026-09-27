@@ -12,10 +12,14 @@ The previews approximate the device's hand rotation; the BIN has not yet been in
 
 ## Validação de assets da prévia
 
-Antes de recompilar o BIN, valide os assets do sistema de prévia:
+O sistema de prévia vive em `preview/` na raiz do repositório, não neste pacote.
+`authoring.html` é a página para trocar a arte antes de compilar; `index.html` abre
+qualquer `.bin` e não precisa de nenhum passo de conversão.
+
+Antes de recompilar o BIN, valide os assets:
 
 ```bash
-python3 ../preview/validate-preview-assets.py
+python3 ../../preview/validate-preview-assets.py
 ```
 
 Isso garante que os PNGs em `preview/assets/` estão consistentes com `../assets/dial_desc.json` e que o canvas é 466×466. Após a validação, copie os assets atualizados para `assets/` e execute o compilador.

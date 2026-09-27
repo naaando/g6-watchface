@@ -4,7 +4,7 @@ Validate preview assets for the G6 watchface.
 
 Verifies that:
   1. Canvas size is 466x466
-  2. All asset files referenced in config.js exist in preview/assets/
+  2. All asset files referenced in config.js exist in assets/
   3. Every layer declares a `block` type present in dial_desc.json
   4. Each layer's geometry (size, position, rotation center, frame count)
      matches its dial_desc.json block — this is what the compiler packs
@@ -34,7 +34,10 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PREVIEW_DIR = SCRIPT_DIR
 ASSETS_DIR = os.path.join(PREVIEW_DIR, "assets")
 CONFIG_PATH = os.path.join(PREVIEW_DIR, "config.js")
-DIAL_DESC_PATH = os.path.join(PREVIEW_DIR, "..", "assets", "dial_desc.json")
+# The descriptor this dial is built from lives with the compiler, not here.
+DIAL_DESC_PATH = os.path.join(
+    PREVIEW_DIR, "..", "g6-cat-gauge-transfer", "assets", "dial_desc.json"
+)
 
 EXPECTED_CANVAS_SIZE = 466
 
