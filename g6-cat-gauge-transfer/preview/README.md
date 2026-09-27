@@ -1,194 +1,231 @@
 # G6 Watchface Preview
 
-Interactive HTML5 Canvas preview for the G6/Trek 1 "cat_gauge_analog_test" watchface.
+Two HTML5 Canvas previews for G6 / Trek 1 watchfaces, sharing one decoder.
 
-## Opening the Page
+| Page | Use it for |
+|---|---|
+| `index.html` | **Looking at a dial.** Drop in any `.bin` and it decodes in the browser. |
+| `authoring.html` | **Changing art before compiling.** Swaps background PNGs against a fixed geometry. |
 
-Open `index.html` directly in any modern browser. No server required — works with `file://` protocol.
+Start with `index.html`. It needs nothing but a `.bin` file.
 
 ```
 open index.html
-# or
-firefox index.html
-# or
-google-chrome index.html
 ```
 
-### Switching dials
+---
 
-Append `?dial=<id>` to the URL:
+## index.html — open a dial
+
+Choose a `.bin` with the **Open .bin…** button, or drop one on the page. The
+whole window is a drop target, so you do not have to aim.
+
+The dial is decoded client-side by `bin-decoder.js`, a port of
+`Fogg/comp_decomp.py`. Nothing is converted first, so this works on a dial
+pulled straight off the device or out of an APK, and it works on dials this
+repo has never seen.
+
+Under **Blocks in this dial** is a table of everything the file contained,
+which is the fastest way to confirm a decode did not silently drop something.
+
+### What the preview does and does not do
+
+Everything drawn is the dial's own artwork, from its own blocks. The preview
+supplies values the firmware would normally read from sensors — battery,
+steps, pulse, temperature — through sliders. The clock uses the browser's
+`Date`, since there is no RTC here.
+
+| Preview behaviour | Why |
+|---|---|
+| Complication values come from sliders | The device reads them from sensors. |
+| Animation plays at 130 ms/frame | `BLK_ANIMPART`'s `ctx` selects looping, but not a speed. The firmware picks its own. |
+| Hands rotate from the descriptor's `ctx`/`cty` | See the pivot note below — these fields are misnamed. |
+| Animation is played even if `ctx` is not 10 | The preview cannot tell what triggers it, so it loops. |
+| No preview thumbnail on screen | `BLK_PREVI` is the 280×280 image shown in the watch's face picker, not on the dial. |
+
+If a block fails to decode the rest of the dial still renders and the status
+line says which block. A file that is not a dial at all gets an error overlay
+rather than a black screen.
+
+---
+
+## authoring.html — change art before compiling
+
+This is the original page. It is for iterating on artwork: swap the PNGs in
+`assets/`, reload, and see the result, without rebuilding a BIN.
+
+Two dials are available via a query parameter:
 
 ```
-open "file://$PWD/index.html?dial=11448"
+open "file://$PWD/authoring.html?dial=11448"
 ```
 
-> **macOS `open` caveat:** `open index.html?dial=11448` fails with
-> "No such file or directory". `open` treats the `?` as part of the filename
-> rather than starting a query string. Pass a full `file://` URL instead, as
-> above. Double-clicking `index.html` in Finder is unaffected, but Finder
-> cannot pass a query string — use the `open` form to switch dials.
+> **macOS `open` caveat:** `open authoring.html?dial=11448` fails with "No such
+> file or directory" — `open` treats the `?` as part of the filename. Pass a
+> full `file://` URL as above. Double-clicking in Finder cannot pass a query
+> string at all.
 
 | id | Dial |
 |---|---|
 | `cat-gauge-analog-test` | Default. The current build, with swappable art. |
 | `11448` | `0.0_AM05_G6_11448.bin`, a stock Trek 1 dial. |
 
-Only dials whose **geometry is identical** belong in the selector — same block
+Only dials with **identical geometry** belong in the selector — same block
 types, sizes, positions and `ctx`/`cty`. Those differ only in artwork, so
-switching is just a matter of pointing `src` at different PNGs. This was
-verified block by block: `0.0_AM05_G6_11448` and `cat_gauge_analog_test` match
-on all 8 blocks, including the arms.
+switching is just pointing `src` at different PNGs. Verified block by block:
+`0.0_AM05_G6_11448` and `cat_gauge_analog_test` match on all 8 blocks,
+including the arms.
 
 A dial with *different* geometry needs its own `config.js` and its own
 `dial_desc.json`, since the descriptor is what the compiler packs and what
 `validate-preview-assets.py` checks against. An unrecognised `?dial=` shows an
-error rather than silently falling back to the default.
+error rather than silently falling back.
 
 To add a dial, copy its decoded assets under `assets/dials/<id>/` and add an
 entry to `DIAL_ASSET_SETS` in `config.js`. The validator checks that every file
 the selector can point at exists.
 
-## What's Real vs Simulated
+---
 
-### Real Data (from BIN / dial_desc.json)
+## Format notes worth knowing
 
-| Layer | Source | Description |
-|-------|--------|-------------|
-| Background | `assets/cat-background.png` | 466×466 background image (art swapped freely; the filename need not match the BIN) |
-| Background (`?dial=11448`) | `assets/dials/11448/background.png` | 466×466 background from the stock Trek 1 dial |
-| Battery | `assets/battery_strip.png` | 6-frame battery indicator (0-5) |
-| Steps | `assets/steps.png` | 10-frame step counter (0-9) |
-| Progress | `assets/progress2.png` | 11-frame progress ring (0-10) |
-| Hour hand | `assets/arm_hour.png` | Rotating hour hand |
-| Minute hand | `assets/arm_minute.png` | Rotating minute hand |
-| Second hand | `assets/arm_second.png` | Rotating second hand |
+These cost real debugging time. Each is verified against decoded pixels or
+against `Fogg/comp_decomp.py`, not read off the spec.
 
-All positions, dimensions, and rotation centers come from `dial_desc.json` in the BIN descriptor.
+### Arm pivots: `ctx` is measured from the bottom
 
-#### Arm rotation pivots (`ctx` / `cty`)
+The `ctx` / `cty` fields are named misleadingly.
 
-The `ctx` / `cty` fields in `dial_desc.json` are named misleadingly. Verified
-against the extracted sprites of this dial:
+- `cty` is the **horizontal** offset from the sprite's left edge, and equals
+  `width / 2` for all three hands in every dial measured.
+- `ctx` is the distance from the **bottom** edge, so `pivotY = height - ctx`.
 
-| block | width | height | `ctx` | `cty` | real pivot (x, y) |
-|---|---|---|---|---|---|
-| `BLK_ARM_HOUR` | 18 | 132 | 2 | 9 | (9, 130) |
-| `BLK_ARM_MINUTE` | 16 | 182 | 2 | 8 | (8, 180) |
-| `BLK_ARM_SECOND` | 28 | 256 | 44 | 14 | (14, 212) |
+For `0.0_AM05_G6_11448`:
 
-- `cty` is the **horizontal** offset from the left edge, and equals `width / 2`
-  for all three hands.
-- `ctx` is the distance from the **bottom** edge to the pivot, so
-  `pivotY = height - ctx`. It is *not* a distance from the top.
+| block | w × h | `ctx` | `cty` | real pivot (x, y) |
+|---|---|---|---|---|
+| `arm_hour` | 18 × 132 | 2 | 9 | (9, 130) |
+| `arm_minute` | 16 × 182 | 2 | 8 | (8, 180) |
+| `arm_second` | 28 × 256 | 44 | 14 | (14, 212) |
 
-`getHandPivot(block)` in `preview.js` implements this. Getting it wrong renders
-every hand 180° off while still converging on the dial centre, so the error is
-easy to miss by eye — the in-browser check is to render at 10:08:30 and compare
-each hand's tip angle (expected 304° / 51° / 180°) via `getImageData`.
+Implemented as `handPivot(block)` in `bin-decoder.js`. Reading the fields the
+obvious way renders every hand 180° off while still converging on the dial
+centre, so the error is easy to miss by eye.
 
-Note: `Fogg/docs/DIAL_FORMAT_GUIDE.md` section E described these fields
-incorrectly; it has been corrected in the local Fogg checkout.
+`Fogg/docs/DIAL_FORMAT_GUIDE.md` section E described these incorrectly; it has
+been corrected in the local Fogg checkout.
 
-### Optional Blocks (not in this dial's descriptor)
+### Arm position is the pivot, not the sprite's corner
 
-| Layer | Source | Description |
-|-------|--------|-------------|
-| Animation | `assets/animpart.png` | `BLK_ANIMPART` (0x17) looping animation, 6 frames at 100ms (10fps) |
+For arm blocks, `posx`/`posy` is where the pivot lands on screen — 233, 233 in
+every dial measured — not the top-left of the sprite. So a 256px hand at
+`posy=233` is normal, not an off-screen block. A naive bounding-box bounds
+check will reject every hand in every dial.
 
-`BLK_ANIMPART` is a real firmware block type that this particular dial does not
-use, so it is absent from `dial_desc.json`. Layers like this are marked
-`optional: true` in `config.js`; the validator checks them against the format
-guide's constraints instead of the descriptor, and the preview degrades
-gracefully if the asset is missing.
+### Frame strips are vertical
 
-Constraints from `Fogg/docs/DIAL_FORMAT_GUIDE.md` (section G):
+Frames stack top to bottom: a strip is `width` × (`height` × `frames`).
+Animation strips and indicator strips alike. Reading them horizontally renders
+frame 0 forever and is easy to miss when frame 0 looks plausible.
 
-- The block must fit inside the 466×466 screen
-- Recommended maximum: ~150×150 px, 5–12 frames
-- `ctx = 10` selects time-based looping
-- Full-screen 466×466 animations exist (dial templates 3274, 7235, 10044) but
-  stay at **4–6 frames** — 10 full-screen frames exceed 4 MB of raw frame
-  buffer and will crash the watch
+This was a real bug in the old `preview.js`, where `drawSpriteFrame` sliced
+horizontally. `drawAnimFrame` in the same file had it right.
 
-Animation assets are **vertical strips**: one frame per `frameHeight` row band.
-Indicator blocks (battery, steps, progress) are **horizontal strips**. Build a
-strip from a GIF or video with:
+### `RGBA5658` is 3 bytes per pixel, not 4
 
-```bash
-python3 make-anim-strip.py source.gif assets/animpart.png --frames 6 --size 150
+One alpha byte, then RGB565 big-endian. The name is misleading.
+
+### Blank indicator strips can be intentional
+
+The `cat-gauge` builds write all-zero RGBA for `battery_strip`, `steps` and
+`progress2` on purpose — see `trek-watchfaces/build_cat_gauge_analog_test.py`.
+The artwork does not suit them. So "this indicator decodes to nothing" is not
+necessarily a bug; compare against the build script before chasing it.
+
+---
+
+## Reusable modules
+
+The three modules have no DOM dependency of their own beyond a canvas you hand
+them, so they can be imported by another page, a test, or a build script.
+
+| Module | Depends on | Does |
+|---|---|---|
+| `bin-decoder.js` | nothing | `.bin` → blocks with pixel data. Runs in Node. |
+| `dial-renderer.js` | a canvas | blocks + data → pixels. |
+| `dial-app.js` | a canvas, the two above | loading, clock, animation, state, PNG export. |
+
+```js
+const app = new G6DialApp({
+  canvas: document.querySelector('canvas'),
+  decoder: G6BinDecoder,
+  renderer: G6DialRenderer
+});
+
+app.subscribe((app) => console.log(app.description.blocks.length, 'blocks'));
+await app.loadBinFile(fileFromAnInput);
+app.setData({ batteryPercent: 85 });
+app.startClock();
+const png = app.exportPng();
 ```
 
-### Simulated / Conceptual
+`bin-decoder.js` is a port of `Fogg/comp_decomp.py`, and is verified
+byte-identical to it: every block of all 8 dials in the repo decodes to the
+same SHA-256 in both. Run `node tests/compare-with-reference.js --all` to
+re-check.
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Digital time overlay | **CONCEPT ONLY** | Drawn programmatically on canvas. Not part of the actual BIN. Clearly labeled "DIGITAL CONCEPT — SIMULATED". |
-| Real-time clock | **SIMULATED** | Uses browser's `Date` object, on by default. On the actual device, time comes from the watch's RTC. |
-| Battery/Steps/Progress values | **SIMULATED** | Controlled via sliders. On the device, these come from actual sensors. |
+---
 
-## Controls
+## Tests
 
-The preview opens in a clean state: just the watchface running on the system
-clock. Everything else is behind the **Detalhes** disclosure.
+```bash
+node tests/bin-decoder.test.js     # 82 checks: header, RLE, geometry, errors
+node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
+python3 tests/browser/render.test.py  # 36 checks: real Chromium, real pixels
+node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
+```
 
-Always visible:
+The Python parity check needs Pillow and numpy; the rest do not. The browser
+test needs Playwright, and starts its own http server because `getImageData`
+is tainted under `file://`.
 
-- **Real-time Clock** — Animate hands using system time. On by default.
-- **Detalhes** — Expands the inspection controls below.
-- **Download PNG** — Export the current canvas as `g6-watchface-preview.png`
+`tests/golden.json` holds per-block checksums so a change in the decoder shows
+up as a test failure rather than a silently different preview. Regenerate with
+`--update` when a dial legitimately changes.
 
-Inside **Detalhes**:
+### Two lessons from writing them
 
-- **Hour / Minute / Second sliders** — Set hand positions manually. Touching any
-  of them stops the real-time clock and unchecks it, since you are asking for a
-  fixed time.
-- **Battery slider** — Select battery level (0-5)
-- **Steps slider** — Select step count (0-9)
-- **Progress slider** — Select progress value (0-10)
-- **Digital Concept** — Toggle the simulated digital time overlay
-- **Animation** — Pause/resume the `BLK_ANIMPART` loop (shown only when an animation layer is present)
-- **Reference** — Show the official reference image (`../preview-with-official-hands.png`) next to the canvas for comparison
+- **`node --check` cannot validate inline `<script>` in HTML.** A stray `});`
+  left the page black with the status stuck on "Loading…" while the syntax
+  check passed the whole time. Only a real browser catches that.
+- **A test that never fails is not a test.** The first draft of the renderer
+  tests asserted that indicator strips contain artwork, which is wrong for the
+  `cat-gauge` builds. It looked like a decoder bug and was a bad assumption.
 
-## Generating New Images for the Compiler
+---
 
-To regenerate the layer images from the BIN:
-
-1. Extract the BIN file from the device or APK
-2. Parse `dial_desc.json` to get block definitions
-3. Extract each block's frames as individual PNGs
-4. Place them in `assets/` with the filenames referenced in `config.js`
-
-The `dial_desc.json` in `g6-cat-gauge-transfer/assets/` contains the full block layout with positions, dimensions, and frame counts.
-
-## File Structure
+## File structure
 
 ```
 preview/
-├── index.html          # Main preview page
-├── preview.js          # Canvas compositor + state management
-├── config.js           # Layer configuration (from dial_desc.json)
-├── preview.css         # Styles
-├── export-smoke.html   # Export smoke test
-├── compositor-smoke.html  # Compositor smoke test
-├── state-smoke.html    # State management smoke test
-├── validate-preview-assets.py  # Asset/geometry validator (stdlib only)
-├── make-anim-strip.py  # Build a BLK_ANIMPART vertical strip from GIF/video
-├── README.md           # This file
-└── assets/             # Layer images
-    ├── cat-background.png  # Active background (art is swappable)
-    ├── background.png      # Original background from the BIN
-    ├── ramen-background.png
-    ├── animpart.png        # BLK_ANIMPART vertical strip (6 frames)
-    ├── battery_strip.png
-    ├── steps.png
-    ├── progress2.png
-    ├── arm_hour.png
-    ├── arm_minute.png
-    ├── arm_second.png
-    └── dials/
-        └── 11448/       # Decoded assets for 0.0_AM05_G6_11448.bin
+├── index.html            # Open a .bin
+├── authoring.html        # Swappable art against fixed geometry
+├── bin-decoder.js        # .bin → blocks
+├── dial-renderer.js      # blocks → pixels
+├── dial-app.js           # loading, clock, animation, export
+├── config.js             # authoring.html's layer config (from dial_desc.json)
+├── preview.js            # authoring.html's compositor
+├── preview.css           # authoring.html's styles
+├── validate-preview-assets.py  # authoring.html's asset/geometry validator
+├── make-anim-strip.py    # BLK_ANIMPART vertical strip from GIF/video
+├── tests/
+│   ├── bin-decoder.test.js
+│   ├── dial-renderer.test.js
+│   ├── compare-with-reference.js
+│   ├── dump_reference.py      # the Python oracle
+│   ├── fixtures.js
+│   ├── golden.json
+│   └── browser/render.test.py
+├── *-smoke.html          # authoring.html smoke tests
+└── assets/               # authoring.html's layer images
 ```
-
-## Reference Image
-
-The reference image (`../preview-with-official-hands.png`) shows the watchface with official hands for visual comparison. Toggle "Reference" to display it side-by-side with the canvas preview.

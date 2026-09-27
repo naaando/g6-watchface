@@ -1,291 +1,457 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>G6 Watchface Preview</title>
-  <link rel="stylesheet" href="preview.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G6 Watchface Preview</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #14161a;
+    --panel: #1d2026;
+    --border: #2c3038;
+    --text: #e8eaed;
+    --muted: #9aa0aa;
+    --accent: #4d8dff;
+    --ok: #4caf7d;
+    --warn: #e0a355;
+    --error: #e0685f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 64px;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: .01em; }
+  h2 { font-size: 13px; font-weight: 600; margin: 0 0 10px; color: var(--muted); }
+
+  /* The drop zone wraps the canvas so the whole face is a drop target. */
+  #dropzone {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 14px;
+    border: 2px dashed var(--border);
+    border-radius: 18px;
+    transition: border-color .15s, background-color .15s;
+  }
+  #dropzone.dragging {
+    border-color: var(--accent);
+    background: rgba(77,141,255,.07);
+  }
+  #dropzone.has-dial { border-style: solid; border-color: var(--border); }
+
+  #watchface-canvas {
+    display: block;
+    width: 466px;
+    height: 466px;
+    max-width: 84vw;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #000;
+  }
+
+  #empty-state {
+    position: absolute;
+    inset: 14px;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 6px;
+    text-align: center;
+    color: var(--muted);
+    pointer-events: none;
+    padding: 24px;
+  }
+  #dropzone.has-dial #empty-state { display: none; }
+  #empty-state .big { font-size: 15px; color: var(--text); }
+
+  /* Hidden until a dial is loaded; the real input sits under the button. */
+  #file-input { display: none; }
+  .button {
+    position: relative;
+    display: inline-block;
+    padding: 9px 18px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+  }
+  .button.secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+  .button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; }
+
+  #status { color: var(--muted); min-height: 1.5em; text-align: center; }
+  #status.error { color: var(--error); }
+  #status.warn { color: var(--warn); }
+
+  #error-overlay {
+    position: absolute;
+    inset: 14px;
+    border-radius: 50%;
+    background: rgba(10,11,13,.94);
+    display: none;
+    place-content: center;
+    padding: 32px;
+    text-align: center;
+    color: var(--error);
+    font-size: 13px;
+  }
+  #error-overlay.shown { display: grid; }
+
+  details {
+    width: min(560px, 92vw);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  summary { cursor: pointer; font-weight: 600; color: var(--muted); list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "▸"; display: inline-block; width: 1em; transition: transform .15s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px 18px;
+    margin-top: 14px;
+  }
+  .control { display: flex; flex-direction: column; gap: 3px; }
+  .control label { color: var(--muted); font-size: 12px; }
+  .control output { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .control input[type=range] { width: 100%; accent-color: var(--accent); }
+  .checkboxes { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+  .checkboxes label { color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+  table { border-collapse: collapse; margin-top: 12px; font-size: 12px; width: 100%; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--border); color: var(--muted); }
+
+  .hint { color: var(--muted); font-size: 12px; max-width: 560px; text-align: center; }
+  .hint code { background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+</style>
 </head>
 <body>
-  <h1>G6 Watchface Preview</h1>
-  <div id="dial-label" class="dial-label"></div>
 
-  <div class="comparison-row">
-    <div class="watchface-container">
-      <canvas id="watchface-canvas" width="466" height="466"></canvas>
-      <div id="error-overlay" class="error-overlay" style="display: none;"></div>
-    </div>
-    <div id="reference-container" class="reference-container" style="display: none;">
-      <img id="reference-image" src="../preview-with-official-hands.png" alt="Reference watchface with official hands">
-      <div class="reference-label">Reference (Official)</div>
-    </div>
+<h1>G6 Watchface Preview</h1>
+
+<div id="dropzone">
+  <canvas id="watchface-canvas" width="466" height="466"></canvas>
+  <div id="empty-state">
+    <div class="big">Drop a .bin dial here</div>
+    <div>or choose a file below</div>
   </div>
+  <div id="error-overlay" role="alert"></div>
+</div>
 
-  <div class="controls controls-toggles">
-    <label class="toggle-label">
-      <input type="checkbox" id="ctrl-clock" checked>
-      Real-time Clock
+<div class="row">
+  <label class="button" for="file-input">Open .bin…</label>
+  <input type="file" id="file-input" accept=".bin,application/octet-stream">
+  <button class="button secondary" id="download" disabled>Download PNG</button>
+</div>
+
+<div id="status">Choose a dial to begin.</div>
+
+<div class="hint">
+  Any <code>.bin</code> built for the G6 / Trek&nbsp;1 works — the preview decodes
+  it in the browser, so there is nothing to convert first.
+</div>
+
+<details>
+  <summary>Time</summary>
+  <div class="row" style="margin-top:12px">
+    <label class="checkboxes" style="margin:0">
+      <span><input type="checkbox" id="real-time" checked> Real-time clock</span>
     </label>
   </div>
-
-  <details id="details-panel" class="details-panel">
-    <summary class="details-summary">Detalhes</summary>
-
-    <div class="details-body">
-      <div class="controls">
-        <label>
-          Hour
-          <input type="range" id="ctrl-hour" min="0" max="23" value="10">
-          <span class="value" id="val-hour">10</span>
-        </label>
-        <label>
-          Minute
-          <input type="range" id="ctrl-minute" min="0" max="59" value="8">
-          <span class="value" id="val-minute">08</span>
-        </label>
-        <label>
-          Second
-          <input type="range" id="ctrl-second" min="0" max="59" value="30">
-          <span class="value" id="val-second">30</span>
-        </label>
-        <label>
-          Battery
-          <input type="range" id="ctrl-battery" min="0" max="5" value="4">
-          <span class="value" id="val-battery">4</span>
-        </label>
-        <label>
-          Steps
-          <input type="range" id="ctrl-steps" min="0" max="9" value="5">
-          <span class="value" id="val-steps">5</span>
-        </label>
-        <label>
-          Progress
-          <input type="range" id="ctrl-progress" min="0" max="10" value="6">
-          <span class="value" id="val-progress">6</span>
-        </label>
-      </div>
-
-      <div class="controls controls-toggles">
-        <label class="toggle-label">
-          <input type="checkbox" id="ctrl-digital">
-          Digital Concept
-        </label>
-        <label class="toggle-label">
-          <input type="checkbox" id="ctrl-reference">
-          Reference
-        </label>
-        <label class="toggle-label" id="anim-toggle-label" hidden>
-          <input type="checkbox" id="ctrl-anim">
-          Animation (BLK_ANIMPART)
-        </label>
-      </div>
-    </div>
-  </details>
-
   <div class="controls">
-    <button id="btn-export" class="btn-export" type="button">Download PNG</button>
+    <div class="control">
+      <label for="hour">Hour</label>
+      <input type="range" id="hour" min="0" max="23" value="10">
+      <output id="hour-out">10</output>
+    </div>
+    <div class="control">
+      <label for="minute">Minute</label>
+      <input type="range" id="minute" min="0" max="59" value="8">
+      <output id="minute-out">8</output>
+    </div>
+    <div class="control">
+      <label for="second">Second</label>
+      <input type="range" id="second" min="0" max="59" value="30">
+      <output id="second-out">30</output>
+    </div>
   </div>
+</details>
 
-  <div id="status" class="status">Loading...</div>
+<details>
+  <summary>Complications</summary>
+  <div class="controls">
+    <div class="control">
+      <label for="battery">Battery %</label>
+      <input type="range" id="battery" min="0" max="100" value="60">
+      <output id="battery-out">60</output>
+    </div>
+    <div class="control">
+      <label for="steps">Steps</label>
+      <input type="range" id="steps" min="0" max="99999" step="100" value="5000">
+      <output id="steps-out">5000</output>
+    </div>
+    <div class="control">
+      <label for="pulse">Pulse</label>
+      <input type="range" id="pulse" min="0" max="220" value="72">
+      <output id="pulse-out">72</output>
+    </div>
+    <div class="control">
+      <label for="calories">Calories</label>
+      <input type="range" id="calories" min="0" max="9999" step="10" value="400">
+      <output id="calories-out">400</output>
+    </div>
+    <div class="control">
+      <label for="distance">Distance km</label>
+      <input type="range" id="distance" min="0" max="99" value="3">
+      <output id="distance-out">3</output>
+    </div>
+    <div class="control">
+      <label for="temperature">Temp °C</label>
+      <input type="range" id="temperature" min="-40" max="80" value="22">
+      <output id="temperature-out">22</output>
+    </div>
+  </div>
+  <div class="checkboxes">
+    <label><input type="checkbox" id="connected" checked> Connected</label>
+    <label><input type="checkbox" id="animation"> Freeze animation</label>
+  </div>
+</details>
 
-  <script src="config.js"></script>
-  <script src="preview.js"></script>
-  <script>
-    (function() {
-      const canvas = document.getElementById('watchface-canvas');
-      const statusEl = document.getElementById('status');
-      const errorOverlay = document.getElementById('error-overlay');
+<details>
+  <summary>Blocks in this dial</summary>
+  <div id="block-table"></div>
+</details>
 
-      // Name the active dial in the header so a screenshot is self-identifying.
-      const dialLabelEl = document.getElementById('dial-label');
-      if (WATCHFACE_CONFIG.dialLabel) {
-        dialLabelEl.textContent = WATCHFACE_CONFIG.dialLabel;
-      }
+<script src="bin-decoder.js"></script>
+<script src="dial-renderer.js"></script>
+<script src="dial-app.js"></script>
+<script>
+'use strict';
 
-      // An unrecognised ?dial= is a user error, not a rendering problem, so
-      // surface it on the canvas rather than quietly showing the default dial.
-      if (WATCHFACE_CONFIG.dialError) {
-        statusEl.textContent = WATCHFACE_CONFIG.dialError;
-        statusEl.className = 'status error';
-        errorOverlay.textContent = WATCHFACE_CONFIG.dialError;
-        errorOverlay.style.display = 'flex';
-        return;
-      }
+const app = new G6DialApp({
+  canvas: document.getElementById('watchface-canvas'),
+  decoder: window.G6BinDecoder,
+  renderer: window.G6DialRenderer
+});
 
-      // Check Canvas 2D support
-      const ctx = canvas.getContext && canvas.getContext('2d');
-      if (!ctx) {
-        statusEl.textContent = 'Canvas 2D is not supported in this browser.';
-        statusEl.className = 'status error';
-        errorOverlay.textContent = 'Canvas 2D not supported. Please use a modern browser.';
-        errorOverlay.style.display = 'flex';
-        return;
-      }
+const statusEl = document.getElementById('status');
+const errorEl = document.getElementById('error-overlay');
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('file-input');
+const downloadBtn = document.getElementById('download');
+const blockTable = document.getElementById('block-table');
 
-      // Load all images. The anim layer is optional: if it is missing from
-      // config.js or fails to load, the preview still works without animation.
-      const layerNames = ['background', 'battery', 'steps', 'progress', 'hour', 'minute', 'second', 'anim'];
-      const images = {};
-      const loadPromises = layerNames.map(function(name) {
-        const layer = WATCHFACE_CONFIG.layers[name];
-        if (!layer) return Promise.resolve();
+app.startClock();
 
-        return loadImage(layer.src)
-          .then(function(img) { images[name] = img; })
-          .catch(function(err) {
-            // Optional blocks degrade gracefully; required ones are fatal.
-            if (layer.optional) {
-              console.warn('Optional layer ' + name + ' failed to load:', err);
-              return;
-            }
-            console.error('Failed to load ' + name + ':', err);
-            statusEl.textContent = 'Error loading ' + name + ': ' + err.message;
-            statusEl.className = 'status error';
-            errorOverlay.textContent = 'Failed to load image: ' + layer.src;
-            errorOverlay.style.display = 'flex';
-            throw err;
-          });
-      });
+// ─── Status ────────────────────────────────────────────────────────────────
 
-      Promise.all(loadPromises).then(function() {
-        statusEl.textContent = 'Ready';
-        statusEl.className = 'status success';
+/**
+ * Show a status line. `tone` is 'ok', 'warn' or 'error'; anything else is
+ * neutral. Partial block failures are warnings, not errors: the rest of the
+ * dial is still worth looking at.
+ */
+function setStatus(message, tone) {
+  statusEl.textContent = message;
+  statusEl.className = tone || '';
+}
 
-        // Get control elements
-        const controls = {
-          hour: document.getElementById('ctrl-hour'),
-          minute: document.getElementById('ctrl-minute'),
-          second: document.getElementById('ctrl-second'),
-          battery: document.getElementById('ctrl-battery'),
-          steps: document.getElementById('ctrl-steps'),
-          progress: document.getElementById('ctrl-progress')
-        };
+function showError(message) {
+  errorEl.textContent = message;
+  errorEl.classList.add('shown');
+}
 
-        const valueLabels = {
-          hour: document.getElementById('val-hour'),
-          minute: document.getElementById('val-minute'),
-          second: document.getElementById('val-second'),
-          battery: document.getElementById('val-battery'),
-          steps: document.getElementById('val-steps'),
-          progress: document.getElementById('val-progress')
-        };
+function clearError() {
+  errorEl.classList.remove('shown');
+}
 
-        const clockToggle = document.getElementById('ctrl-clock');
-        const digitalToggle = document.getElementById('ctrl-digital');
-        const animToggle = document.getElementById('ctrl-anim');
-        const animToggleLabel = document.getElementById('anim-toggle-label');
-        const referenceToggle = document.getElementById('ctrl-reference');
-        const exportBtn = document.getElementById('btn-export');
+// ─── Loading ───────────────────────────────────────────────────────────────
 
-        // Sync controls from state
-        function syncControlsFromState() {
-          // Don't fight the user: the animation loop re-renders ~10x/sec, so
-          // skip the control sync while a slider has focus mid-drag.
-          const active = document.activeElement;
-          const dragging = Object.keys(controls).some(function(k) {
-            return controls[k] === active;
-          });
-          if (dragging) return;
+async function loadFile(file) {
+  if (!file) return;
+  clearError();
+  setStatus('Decoding ' + file.name + '…');
+  try {
+    const description = await app.loadBinFile(file);
+    dropzone.classList.add('has-dial');
+    downloadBtn.disabled = false;
+    renderBlockTable(description);
 
-          const s = getState();
-          controls.hour.value = s.hour;
-          controls.minute.value = s.minute;
-          controls.second.value = s.second;
-          controls.battery.value = s.battery;
-          controls.steps.value = s.steps;
-          controls.progress.value = s.progress;
-          digitalToggle.checked = s.digitalMode;
+    const size = formatBytes(file.size);
+    setStatus(
+      description.blocks.length + ' blocks from ' + file.name + ' (' + size + ')' +
+      (app.dial.errors.length ? ' — ' + app.dial.errors.length + ' block(s) failed' : ''),
+      app.dial.errors.length ? 'warn' : 'ok'
+    );
+    if (app.dial.errors.length) {
+      setStatus(
+        app.dial.errors.length + ' block(s) failed to decode: ' +
+        app.dial.errors.map((e) => e.block).join(', ') + ' — showing the rest',
+        'warn'
+      );
+    }
+  } catch (err) {
+    dropzone.classList.remove('has-dial');
+    downloadBtn.disabled = true;
+    blockTable.textContent = '';
+    const message = err && err.message ? err.message : String(err);
+    showError(message);
+    setStatus('Could not read that file. ' + message, 'error');
+  }
+}
 
-          valueLabels.hour.textContent = s.hour;
-          valueLabels.minute.textContent = String(s.minute).padStart(2, '0');
-          valueLabels.second.textContent = String(s.second).padStart(2, '0');
-          valueLabels.battery.textContent = s.battery;
-          valueLabels.steps.textContent = s.steps;
-          valueLabels.progress.textContent = s.progress;
-          animToggle.checked = s.animEnabled;
-        }
+fileInput.addEventListener('change', () => {
+  loadFile(fileInput.files[0]);
+  // Reset so re-picking the same file fires change again.
+  fileInput.value = '';
+});
 
-        // Render callback — called by setState
-        function render(state) {
-          syncControlsFromState();
-          renderWatchface(ctx, images, state);
-        }
+// Drag and drop across the whole window, so you do not have to aim.
+for (const type of ['dragenter', 'dragover']) {
+  window.addEventListener(type, (event) => {
+    event.preventDefault();
+    dropzone.classList.add('dragging');
+  });
+}
+for (const type of ['dragleave', 'drop']) {
+  window.addEventListener(type, (event) => {
+    event.preventDefault();
+    if (type === 'dragleave' && event.relatedTarget) return;
+    dropzone.classList.remove('dragging');
+  });
+}
+window.addEventListener('drop', (event) => {
+  const file = event.dataTransfer && event.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
 
-        // Register render callback
-        setRenderCallback(render);
+downloadBtn.addEventListener('click', () => {
+  app.downloadPng();
+});
 
-        // Attach event listeners — controls update state
-        Object.keys(controls).forEach(function(key) {
-          controls[key].addEventListener('input', function() {
-            // Dragging a slider means the user wants a fixed time, so the
-            // real-time clock yields and the checkbox follows.
-            stopClock();
-            clockToggle.checked = false;
-            const partial = { realTime: false };
-            partial[key] = parseInt(controls[key].value, 10);
-            setState(partial);
-          });
-        });
+// ─── Controls ──────────────────────────────────────────────────────────────
 
-        // Real-time clock toggle
-        clockToggle.addEventListener('change', function() {
-          if (clockToggle.checked) {
-            startClock();
-          } else {
-            stopClock();
-            setState({ realTime: false });
-          }
-        });
+/**
+ * The clock and complication controls write straight into the app's data.
+ * The render loop runs several times a second while an animation is loaded,
+ * so syncing from state back into the inputs has to yield to a control the
+ * user is currently dragging — otherwise the thumb fights the pointer.
+ */
+const TIME_CONTROLS = ['hour', 'minute', 'second'];
+const COMPLICATION_CONTROLS = {
+  battery: 'batteryPercent',
+  steps: 'steps',
+  pulse: 'pulse',
+  calories: 'calories',
+  distance: 'distanceKm',
+  temperature: 'temperatureC'
+};
 
-        // Digital concept toggle
-        digitalToggle.addEventListener('change', function() {
-          toggleDigitalConcept(digitalToggle.checked);
-        });
+for (const id of TIME_CONTROLS) {
+  const input = document.getElementById(id);
+  const output = document.getElementById(id + '-out');
+  input.addEventListener('input', () => {
+    output.textContent = input.value;
+    app.setTime(
+      Number(document.getElementById('hour').value),
+      Number(document.getElementById('minute').value),
+      Number(document.getElementById('second').value)
+    );
+  });
+}
 
-        // Reference toggle
-        referenceToggle.addEventListener('change', function() {
-          toggleReference(referenceToggle.checked);
-        });
+for (const [id, field] of Object.entries(COMPLICATION_CONTROLS)) {
+  const input = document.getElementById(id);
+  const output = document.getElementById(id + '-out');
+  input.addEventListener('input', () => {
+    output.textContent = input.value;
+    app.setData({ [field]: Number(input.value) });
+  });
+}
 
-        // Animation toggle — only shown when a BLK_ANIMPART layer loaded
-        if (images.anim) {
-          animToggleLabel.hidden = false;
-          animToggle.addEventListener('change', function() {
-            setState({ animEnabled: animToggle.checked });
-            if (animToggle.checked) {
-              startAnimation();
-            } else {
-              stopAnimation();
-            }
-          });
-        }
+const realTimeEl = document.getElementById('real-time');
+realTimeEl.addEventListener('change', () => {
+  app.setRealTime(realTimeEl.checked);
+  if (!realTimeEl.checked) app.stopClock();
+  else app.startClock();
+});
 
-        // Export button
-        exportBtn.addEventListener('click', function() {
-          const link = exportPng();
-          link.click();
-        });
+const connectedEl = document.getElementById('connected');
+connectedEl.addEventListener('change', () => {
+  app.setData({ connected: connectedEl.checked });
+});
 
-        // Real-time clock is the default mode: start it before the first
-        // render so the preview opens showing the actual current time.
-        if (getState().realTime) {
-          startClock();
-        }
+const animationEl = document.getElementById('animation');
+animationEl.addEventListener('change', () => {
+  if (animationEl.checked) {
+    app.stopAnimation();
+  } else {
+    app.startAnimation();
+  }
+});
 
-        // Initial render
-        syncControlsFromState();
-        renderWatchface(ctx, images, getState());
+// ─── Block inventory ───────────────────────────────────────────────────────
 
-        // Start the BLK_ANIMPART loop only if the strip loaded and the user
-        // wants it. animEnabled defaults to false, so the still background
-        // shows through until the checkbox is ticked.
-        if (images.anim && getState().animEnabled) {
-          startAnimation();
-        }
-      }).catch(function(err) {
-        console.error('Initialization failed:', err);
-      });
-    })();
-  </script>
+/**
+ * Show what the loaded dial actually contains. This is the part that used to
+ * live in a hand-written config file per dial, so it doubles as a check that
+ * the decode found everything the file claims to have.
+ */
+function renderBlockTable(description) {
+  const rows = description.blocks.map((block) => {
+    const position = block.name.startsWith('arm') ? 'pivot ' + block.posx + ',' + block.posy
+      : block.posx + ',' + block.posy;
+    const notes = [];
+    if (!block.onScreen) notes.push('off-screen');
+    if (block.role === 'animation') notes.push('animates');
+    return '<tr>' +
+      '<td>' + block.name + '</td>' +
+      '<td><span class="tag">' + block.role + '</span></td>' +
+      '<td class="num">' + block.width + '×' + block.height + ' ×' + block.frames + '</td>' +
+      '<td class="num">' + position + '</td>' +
+      '<td class="num">' + block.colsp + (notes.length ? ' · ' + notes.join(' · ') : '') + '</td>' +
+      '</tr>';
+  });
+  blockTable.innerHTML =
+    '<table><thead><tr>' +
+    '<th>Block</th><th>Role</th><th>Size ×frames</th><th>Position</th><th>Notes</th>' +
+    '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+app.subscribe(() => {
+  if (app.dial) downloadBtn.disabled = false;
+});
+
+// Handle for the browser harness in tests/browser/render.test.py, which needs
+// to read app state and force a specific time. Harmless in normal use, and
+// cheaper than teaching the harness to click sliders for every assertion.
+window.appForTests = app;
+</script>
 </body>
 </html>

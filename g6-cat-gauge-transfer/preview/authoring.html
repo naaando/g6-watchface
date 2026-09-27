@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G6 Watchface Preview</title>
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <h1>G6 Watchface Preview</h1>
+  <div id="dial-label" class="dial-label"></div>
+
+  <div class="comparison-row">
+    <div class="watchface-container">
+      <canvas id="watchface-canvas" width="466" height="466"></canvas>
+      <div id="error-overlay" class="error-overlay" style="display: none;"></div>
+    </div>
+    <div id="reference-container" class="reference-container" style="display: none;">
+      <img id="reference-image" src="../preview-with-official-hands.png" alt="Reference watchface with official hands">
+      <div class="reference-label">Reference (Official)</div>
+    </div>
+  </div>
+
+  <div class="controls controls-toggles">
+    <label class="toggle-label">
+      <input type="checkbox" id="ctrl-clock" checked>
+      Real-time Clock
+    </label>
+  </div>
+
+  <details id="details-panel" class="details-panel">
+    <summary class="details-summary">Detalhes</summary>
+
+    <div class="details-body">
+      <div class="controls">
+        <label>
+          Hour
+          <input type="range" id="ctrl-hour" min="0" max="23" value="10">
+          <span class="value" id="val-hour">10</span>
+        </label>
+        <label>
+          Minute
+          <input type="range" id="ctrl-minute" min="0" max="59" value="8">
+          <span class="value" id="val-minute">08</span>
+        </label>
+        <label>
+          Second
+          <input type="range" id="ctrl-second" min="0" max="59" value="30">
+          <span class="value" id="val-second">30</span>
+        </label>
+        <label>
+          Battery
+          <input type="range" id="ctrl-battery" min="0" max="5" value="4">
+          <span class="value" id="val-battery">4</span>
+        </label>
+        <label>
+          Steps
+          <input type="range" id="ctrl-steps" min="0" max="9" value="5">
+          <span class="value" id="val-steps">5</span>
+        </label>
+        <label>
+          Progress
+          <input type="range" id="ctrl-progress" min="0" max="10" value="6">
+          <span class="value" id="val-progress">6</span>
+        </label>
+      </div>
+
+      <div class="controls controls-toggles">
+        <label class="toggle-label">
+          <input type="checkbox" id="ctrl-digital">
+          Digital Concept
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="ctrl-reference">
+          Reference
+        </label>
+        <label class="toggle-label" id="anim-toggle-label" hidden>
+          <input type="checkbox" id="ctrl-anim">
+          Animation (BLK_ANIMPART)
+        </label>
+      </div>
+    </div>
+  </details>
+
+  <div class="controls">
+    <button id="btn-export" class="btn-export" type="button">Download PNG</button>
+  </div>
+
+  <div id="status" class="status">Loading...</div>
+
+  <script src="config.js"></script>
+  <script src="preview.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('watchface-canvas');
+      const statusEl = document.getElementById('status');
+      const errorOverlay = document.getElementById('error-overlay');
+
+      // Name the active dial in the header so a screenshot is self-identifying.
+      const dialLabelEl = document.getElementById('dial-label');
+      if (WATCHFACE_CONFIG.dialLabel) {
+        dialLabelEl.textContent = WATCHFACE_CONFIG.dialLabel;
+      }
+
+      // An unrecognised ?dial= is a user error, not a rendering problem, so
+      // surface it on the canvas rather than quietly showing the default dial.
+      if (WATCHFACE_CONFIG.dialError) {
+        statusEl.textContent = WATCHFACE_CONFIG.dialError;
+        statusEl.className = 'status error';
+        errorOverlay.textContent = WATCHFACE_CONFIG.dialError;
+        errorOverlay.style.display = 'flex';
+        return;
+      }
+
+      // Check Canvas 2D support
+      const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx) {
+        statusEl.textContent = 'Canvas 2D is not supported in this browser.';
+        statusEl.className = 'status error';
+        errorOverlay.textContent = 'Canvas 2D not supported. Please use a modern browser.';
+        errorOverlay.style.display = 'flex';
+        return;
+      }
+
+      // Load all images. The anim layer is optional: if it is missing from
+      // config.js or fails to load, the preview still works without animation.
+      const layerNames = ['background', 'battery', 'steps', 'progress', 'hour', 'minute', 'second', 'anim'];
+      const images = {};
+      const loadPromises = layerNames.map(function(name) {
+        const layer = WATCHFACE_CONFIG.layers[name];
+        if (!layer) return Promise.resolve();
+
+        return loadImage(layer.src)
+          .then(function(img) { images[name] = img; })
+          .catch(function(err) {
+            // Optional blocks degrade gracefully; required ones are fatal.
+            if (layer.optional) {
+              console.warn('Optional layer ' + name + ' failed to load:', err);
+              return;
+            }
+            console.error('Failed to load ' + name + ':', err);
+            statusEl.textContent = 'Error loading ' + name + ': ' + err.message;
+            statusEl.className = 'status error';
+            errorOverlay.textContent = 'Failed to load image: ' + layer.src;
+            errorOverlay.style.display = 'flex';
+            throw err;
+          });
+      });
+
+      Promise.all(loadPromises).then(function() {
+        statusEl.textContent = 'Ready';
+        statusEl.className = 'status success';
+
+        // Get control elements
+        const controls = {
+          hour: document.getElementById('ctrl-hour'),
+          minute: document.getElementById('ctrl-minute'),
+          second: document.getElementById('ctrl-second'),
+          battery: document.getElementById('ctrl-battery'),
+          steps: document.getElementById('ctrl-steps'),
+          progress: document.getElementById('ctrl-progress')
+        };
+
+        const valueLabels = {
+          hour: document.getElementById('val-hour'),
+          minute: document.getElementById('val-minute'),
+          second: document.getElementById('val-second'),
+          battery: document.getElementById('val-battery'),
+          steps: document.getElementById('val-steps'),
+          progress: document.getElementById('val-progress')
+        };
+
+        const clockToggle = document.getElementById('ctrl-clock');
+        const digitalToggle = document.getElementById('ctrl-digital');
+        const animToggle = document.getElementById('ctrl-anim');
+        const animToggleLabel = document.getElementById('anim-toggle-label');
+        const referenceToggle = document.getElementById('ctrl-reference');
+        const exportBtn = document.getElementById('btn-export');
+
+        // Sync controls from state
+        function syncControlsFromState() {
+          // Don't fight the user: the animation loop re-renders ~10x/sec, so
+          // skip the control sync while a slider has focus mid-drag.
+          const active = document.activeElement;
+          const dragging = Object.keys(controls).some(function(k) {
+            return controls[k] === active;
+          });
+          if (dragging) return;
+
+          const s = getState();
+          controls.hour.value = s.hour;
+          controls.minute.value = s.minute;
+          controls.second.value = s.second;
+          controls.battery.value = s.battery;
+          controls.steps.value = s.steps;
+          controls.progress.value = s.progress;
+          digitalToggle.checked = s.digitalMode;
+
+          valueLabels.hour.textContent = s.hour;
+          valueLabels.minute.textContent = String(s.minute).padStart(2, '0');
+          valueLabels.second.textContent = String(s.second).padStart(2, '0');
+          valueLabels.battery.textContent = s.battery;
+          valueLabels.steps.textContent = s.steps;
+          valueLabels.progress.textContent = s.progress;
+          animToggle.checked = s.animEnabled;
+        }
+
+        // Render callback — called by setState
+        function render(state) {
+          syncControlsFromState();
+          renderWatchface(ctx, images, state);
+        }
+
+        // Register render callback
+        setRenderCallback(render);
+
+        // Attach event listeners — controls update state
+        Object.keys(controls).forEach(function(key) {
+          controls[key].addEventListener('input', function() {
+            // Dragging a slider means the user wants a fixed time, so the
+            // real-time clock yields and the checkbox follows.
+            stopClock();
+            clockToggle.checked = false;
+            const partial = { realTime: false };
+            partial[key] = parseInt(controls[key].value, 10);
+            setState(partial);
+          });
+        });
+
+        // Real-time clock toggle
+        clockToggle.addEventListener('change', function() {
+          if (clockToggle.checked) {
+            startClock();
+          } else {
+            stopClock();
+            setState({ realTime: false });
+          }
+        });
+
+        // Digital concept toggle
+        digitalToggle.addEventListener('change', function() {
+          toggleDigitalConcept(digitalToggle.checked);
+        });
+
+        // Reference toggle
+        referenceToggle.addEventListener('change', function() {
+          toggleReference(referenceToggle.checked);
+        });
+
+        // Animation toggle — only shown when a BLK_ANIMPART layer loaded
+        if (images.anim) {
+          animToggleLabel.hidden = false;
+          animToggle.addEventListener('change', function() {
+            setState({ animEnabled: animToggle.checked });
+            if (animToggle.checked) {
+              startAnimation();
+            } else {
+              stopAnimation();
+            }
+          });
+        }
+
+        // Export button
+        exportBtn.addEventListener('click', function() {
+          const link = exportPng();
+          link.click();
+        });
+
+        // Real-time clock is the default mode: start it before the first
+        // render so the preview opens showing the actual current time.
+        if (getState().realTime) {
+          startClock();
+        }
+
+        // Initial render
+        syncControlsFromState();
+        renderWatchface(ctx, images, getState());
+
+        // Start the BLK_ANIMPART loop only if the strip loaded and the user
+        // wants it. animEnabled defaults to false, so the still background
+        // shows through until the checkbox is ticked.
+        if (images.anim && getState().animEnabled) {
+          startAnimation();
+        }
+      }).catch(function(err) {
+        console.error('Initialization failed:', err);
+      });
+    })();
+  </script>
+</body>
+</html>
