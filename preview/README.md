@@ -16,17 +16,72 @@ Start with `index.html`. It needs nothing but a `.bin` file.
 open index.html
 ```
 
+Or serve the whole thing, which adds a dropdown of every dial in `dials/`:
+
+```
+tools/tunnel.sh
+```
+
+That starts a local server and publishes it on a public `trycloudflare.com`
+URL. See [Publishing it](#publishing-it) below.
+
 ---
 
 ## index.html — open a dial
 
-Choose a `.bin` with the **Open .bin…** button, or drop one on the page. The
-whole window is a drop target, so you do not have to aim.
+Pick a dial from the dropdown, or use the **Open .bin…** button, or drop a
+file on the page. The whole window is a drop target, so you do not have to aim.
+
+The dropdown is filled from [`dials/`](../dials) by a generated manifest, so it
+only appears when the page is served over http. Opened as a `file://` URL,
+`fetch` cannot read the filesystem, so the select is disabled and the button
+and drop target carry on working. That is the primary way to use this and it is
+not a downgrade.
 
 The dial is decoded client-side by `bin-decoder.js`, a port of
 `Fogg/comp_decomp.py`. Nothing is converted first, so this works on a dial
 pulled straight off the device or out of an APK, and it works on dials this
 repo has never seen.
+
+### Publishing it
+
+```bash
+tools/tunnel.sh          # local :8000 plus a public https URL
+tools/tunnel.sh 9000     # a different local port
+tools/tunnel.sh 8000 --no-cloudflared   # local server only, no tunnel
+```
+
+`cloudflared tunnel --url` needs no account, no domain and no config file. The
+hostname is random and changes every run, so do not bookmark it.
+
+**The tunnel is public, so the server is an allowlist, not a file server.**
+`tools/serve-preview.py` exposes exactly three things:
+
+| URL | Comes from |
+|---|---|
+| `/…` | `preview/` |
+| `/dials/<name>.bin`, `/dials/manifest.json` | `dials/` |
+| `/g6-cat-gauge-transfer/preview-with-official-hands.png` | `authoring.html`'s reference image |
+
+Everything else is a 404, including the repository's `.git/`, `Fogg/`,
+`ble-capture/` and `Android-JL_Health/`. The `dials/` mount is narrowed further
+to dial data only, so the manifest generator and `dials/README.md` are not
+published either — which is why the generator lives in `tools/`.
+
+`library.test.py` asserts all of that, including traversal attempts sent over a
+raw socket, because `curl` and `urllib` both collapse `..` before the request
+leaves the client and would silently test the wrong URL.
+
+### Adding a dial to the dropdown
+
+```bash
+cp somewhere/new.bin dials/
+python3 tools/build-dial-manifest.py
+```
+
+That is the whole workflow. The manifest generator reads the block count out of
+the header, so describing a dial costs nothing even at 600 KB. Hand-written
+`label` and `note` fields survive regeneration; everything else is overwritten.
 
 Under **Blocks in this dial** is a table of everything the file contained,
 which is the fastest way to confirm a decode did not silently drop something.
@@ -226,19 +281,30 @@ re-check.
 
 ```bash
 node tests/bin-decoder.test.js     # 82 checks: header, RLE, geometry, errors
-node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
-python3 tests/browser/render.test.py    # 33 checks: index.html in real Chromium
-python3 tests/browser/authoring.test.py # 7 checks: authoring.html boots, assets resolve
+node tests/dial-renderer.test.js   # 27 checks: frame selection, hand angles, digit spelling
+python3 tests/browser/render.test.py     # 34 checks: index.html in real Chromium
+python3 tests/browser/authoring.test.py  # 7 checks: authoring.html boots, assets resolve
 python3 tests/browser/indicators.test.py # 10 checks: complications draw and follow their slider
 python3 tests/browser/digits.test.py     # 14 checks: multi-digit spelling, placeholders survive the clock
-node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
+python3 tests/browser/library.test.py    # 54 checks: the dial dropdown, and what the tunnel does NOT expose
+node tests/compare-with-reference.js --all     # parity with Fogg/comp_decomp.py
+python3 tools/build-dial-manifest.py --check    # the dials/ manifest is not stale
 ```
 
 The Python parity check needs Pillow and numpy; the rest do not. The browser
 tests need Playwright, and start their own http server because `getImageData`
-is tainted under `file://`. `authoring.test.py` serves the **repo root**, not
-`preview/`, because the page reaches up with `../` for its reference image and
-that has to resolve the same way it does under `file://`.
+is tainted under `file://`.
+
+Two of them serve something other than `preview/`, because that is what makes
+a real path resolve:
+
+- `render.test.py` and `authoring.test.py` serve the **repo root**, so
+  `../dials/manifest.json` and `authoring.html`'s `../` reference image work
+  the way they do in production. Serving `preview/` alone makes the manifest
+  404, and a 404 is a console error, so the "loads without script errors" check
+  would fail on a page that is behaving correctly.
+- `library.test.py` drives `tools/serve-preview.py` itself, the allowlist
+  server the tunnel runs, because its routing is the thing being tested.
 
 `tests/golden.json` holds per-block checksums so a change in the decoder shows
 up as a test failure rather than a silently different preview. Regenerate with
@@ -287,6 +353,7 @@ preview/                   # repository root
 │       ├── authoring.test.py    # authoring.html in Chromium
 │       ├── indicators.test.py   # complications draw and follow their slider
 │       ├── digits.test.py       # multi-digit spelling, placeholders vs the clock
+│       ├── library.test.py      # the dial dropdown, and the allowlist server
 │       └── inspect-dial.py      # not a test: dumps what a given .bin renders
 ├── *-smoke.html          # authoring.html smoke tests
 └── assets/               # authoring.html's layer images

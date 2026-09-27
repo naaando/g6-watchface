@@ -76,6 +76,22 @@
 
   /* Hidden until a dial is loaded; the real input sits under the button. */
   #file-input { display: none; }
+
+  #dial-select {
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    max-width: 84vw;
+    cursor: pointer;
+  }
+  #dial-select:disabled { opacity: .5; cursor: not-allowed; }
+  #dial-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #library-note { color: var(--muted); font-size: 12px; text-align: center; max-width: 560px; }
+
   .button {
     position: relative;
     display: inline-block;
@@ -153,11 +169,19 @@
 <div id="dropzone">
   <canvas id="watchface-canvas" width="466" height="466"></canvas>
   <div id="empty-state">
-    <div class="big">Drop a .bin dial here</div>
-    <div>or choose a file below</div>
+    <div class="big">Pick a dial below</div>
+    <div>or drop a .bin onto the face</div>
   </div>
   <div id="error-overlay" role="alert"></div>
 </div>
+
+<div class="row">
+  <select id="dial-select" aria-label="Dial library" disabled>
+    <option>Loading the dial library…</option>
+  </select>
+</div>
+
+<div id="library-note"></div>
 
 <div class="row">
   <label class="button" for="file-input">Open .bin…</label>
@@ -209,9 +233,11 @@
     <div class="control">
       <label for="steps">Steps</label>
       <!-- step=1, not 100: a 10-frame block renders the LAST digit, so a
-           coarser step would pin the frame at 0 forever and look broken. -->
-      <input type="range" id="steps" min="0" max="99999" step="1" value="5000">
-      <output id="steps-out">5000</output>
+           coarser step would pin the frame at 0 forever and look broken. The
+           default matches dial-app's placeholder, and stays inside the
+           three-glyph field so it does not render as "000". -->
+      <input type="range" id="steps" min="0" max="99999" step="1" value="4820">
+      <output id="steps-out">4820</output>
     </div>
     <div class="control">
       <label for="pulse">Pulse</label>
@@ -290,33 +316,48 @@ function clearError() {
 
 // ─── Loading ───────────────────────────────────────────────────────────────
 
-async function loadFile(file) {
-  if (!file) return;
+/**
+ * Decode a buffer and put it on screen. Shared by the file picker, the drop
+ * target and the library select, so all three report success and failure
+ * identically.
+ */
+async function loadBuffer(buffer, name, size) {
   clearError();
-  setStatus('Decoding ' + file.name + '…');
+  setStatus('Decoding ' + name + '…');
   try {
-    const description = await app.loadBinFile(file);
+    const description = app.loadBin(buffer, name);
     dropzone.classList.add('has-dial');
     downloadBtn.disabled = false;
     renderBlockTable(description);
 
-    const size = formatBytes(file.size);
-    setStatus(
-      description.blocks.length + ' blocks from ' + file.name + ' (' + size + ')' +
-      (app.dial.errors.length ? ' — ' + app.dial.errors.length + ' block(s) failed' : ''),
-      app.dial.errors.length ? 'warn' : 'ok'
-    );
     if (app.dial.errors.length) {
       setStatus(
         app.dial.errors.length + ' block(s) failed to decode: ' +
         app.dial.errors.map((e) => e.block).join(', ') + ' — showing the rest',
         'warn'
       );
+    } else {
+      setStatus(
+        description.blocks.length + ' blocks from ' + name + ' (' + formatBytes(size) + ')',
+        'ok'
+      );
     }
   } catch (err) {
     dropzone.classList.remove('has-dial');
     downloadBtn.disabled = true;
     blockTable.textContent = '';
+    const message = err && err.message ? err.message : String(err);
+    showError(message);
+    setStatus('Could not read that file. ' + message, 'error');
+  }
+}
+
+async function loadFile(file) {
+  if (!file) return;
+  try {
+    const buffer = await file.arrayBuffer();
+    await loadBuffer(buffer, file.name, file.size);
+  } catch (err) {
     const message = err && err.message ? err.message : String(err);
     showError(message);
     setStatus('Could not read that file. ' + message, 'error');
@@ -351,6 +392,91 @@ window.addEventListener('drop', (event) => {
 downloadBtn.addEventListener('click', () => {
   app.downloadPng();
 });
+
+// ─── Dial library ──────────────────────────────────────────────────────────
+
+/**
+ * The dial gallery is a folder of .bin files described by a generated
+ * manifest, so adding a dial is "drop the file in, re-run the generator"
+ * rather than editing this page.
+ *
+ * Two manifest locations are tried because there are two ways to serve the
+ * preview: the relative path works when the repo root is served directly, and
+ * the absolute one works behind tools/serve-preview.py, which mounts the
+ * gallery at /dials/ and everything else under /. Under file:// both fail,
+ * because fetch cannot read the filesystem — that is what the file picker and
+ * the drop target are still for.
+ */
+const MANIFEST_URLS = ['../dials/manifest.json', '/dials/manifest.json'];
+const dialSelect = document.getElementById('dial-select');
+const libraryNote = document.getElementById('library-note');
+let libraryBase = null;
+
+async function fetchManifest() {
+  for (const url of MANIFEST_URLS) {
+    try {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (!response.ok) continue;
+      const manifest = await response.json();
+      if (Array.isArray(manifest.dials) && manifest.dials.length) {
+        return { base: url.replace(/manifest\.json$/, ''), dials: manifest.dials };
+      }
+    } catch (err) {
+      // Try the next location; a file:// fetch lands here.
+    }
+  }
+  return null;
+}
+
+function populateLibrary(base, dials) {
+  libraryBase = base;
+  dialSelect.textContent = '';
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Choose a dial…';
+  dialSelect.appendChild(placeholder);
+  for (const entry of dials) {
+    const option = document.createElement('option');
+    option.value = entry.file;
+    option.textContent =
+      entry.label + '  (' + entry.blocks + ' blocks' +
+      (entry.note ? ' · ' + entry.note : '') + ')';
+    if (entry.note) option.title = entry.note;
+    dialSelect.appendChild(option);
+  }
+  dialSelect.disabled = false;
+  libraryNote.textContent = dials.length + ' dials in the library.';
+}
+
+dialSelect.addEventListener('change', async () => {
+  const file = dialSelect.value;
+  if (!file || !libraryBase) return;
+  setStatus('Fetching ' + file + '…');
+  try {
+    const response = await fetch(libraryBase + encodeURIComponent(file));
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const buffer = await response.arrayBuffer();
+    await loadBuffer(buffer, file, buffer.byteLength);
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    showError(message);
+    setStatus('Could not fetch ' + file + '. ' + message, 'error');
+  }
+});
+
+(async () => {
+  const manifest = await fetchManifest();
+  if (manifest) {
+    populateLibrary(manifest.base, manifest.dials);
+  } else {
+    // Not an error: double-clicking index.html has always been the primary way
+    // to use this, and there is no library to read in that case.
+    dialSelect.textContent = 'Dial library unavailable';
+    dialSelect.disabled = true;
+    libraryNote.textContent =
+      'Serve the repo to browse the dial library: python3 tools/serve-preview.py';
+  }
+})();
 
 // ─── Controls ──────────────────────────────────────────────────────────────
 

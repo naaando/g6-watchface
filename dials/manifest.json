@@ -1,0 +1,67 @@
+{
+  "dials": [
+    {
+      "file": "0.0_AM05_G6_11359.bin",
+      "label": "AM05 G6 11359",
+      "bytes": 146512,
+      "sha": "893dbe6eb99b",
+      "blocks": 11
+    },
+    {
+      "file": "0.0_AM05_G6_11448.bin",
+      "label": "AM05 G6 11448",
+      "bytes": 474680,
+      "sha": "3b26d29a1151",
+      "blocks": 8
+    },
+    {
+      "file": "0.0_G6_captured_618808.bin",
+      "label": "G6 captured 618808",
+      "bytes": 618808,
+      "sha": "5c810ee7232f",
+      "blocks": 16
+    },
+    {
+      "file": "cat-gauge-analog-test.bin",
+      "label": "cat gauge analog test",
+      "bytes": 434256,
+      "sha": "e595160dec0d",
+      "blocks": 8
+    },
+    {
+      "file": "cat-gauge-image-test.bin",
+      "label": "cat gauge image test",
+      "bytes": 216616,
+      "sha": "39069e8c633e",
+      "blocks": 8
+    },
+    {
+      "file": "cat-gauge-v1.bin",
+      "label": "cat gauge v1",
+      "bytes": 308356,
+      "sha": "d6c3df202d7c",
+      "blocks": 9
+    },
+    {
+      "file": "cat-gauge-v2.bin",
+      "label": "cat gauge v2",
+      "bytes": 476732,
+      "sha": "7c838acbda85",
+      "blocks": 9
+    },
+    {
+      "file": "roundtrip_11359.bin",
+      "label": "roundtrip 11359",
+      "bytes": 143888,
+      "sha": "87694ee85a69",
+      "blocks": 11
+    },
+    {
+      "file": "roundtrip_11448.bin",
+      "label": "roundtrip 11448",
+      "bytes": 465164,
+      "sha": "2a6c1668dc07",
+      "blocks": 8
+    }
+  ]
+}

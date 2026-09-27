@@ -68,8 +68,14 @@ def serve(directory, port):
 
 def main():
     port = free_port()
-    httpd = serve(PREVIEW, port)
-    base = f"http://127.0.0.1:{port}/index.html"
+    # The repo root, not preview/, so that `../dials/manifest.json` -- the
+    # dial library the page fetches on load -- resolves. Serving only preview/
+    # makes that fetch 404, and a 404 is a console error, so the
+    # "loads without script errors" check would fail on a page that is working
+    # exactly as designed. tools/serve-preview.py is the allowlist version of
+    # this same layout; library.test.py drives that one.
+    httpd = serve(REPO, port)
+    base = f"http://127.0.0.1:{port}"
 
     try:
         from playwright.sync_api import sync_playwright
@@ -85,18 +91,24 @@ def main():
         page.on("console", lambda m: errors.append(f"CONSOLE {m.type}: {m.text}")
                 if m.type == "error" else None)
 
-        print(f"\nserving {PREVIEW} at {base}")
-        page.goto(base)
+        print(f"\nserving {REPO} at {base}")
+        page.goto(base + "/preview/index.html")
         page.wait_for_timeout(400)
 
         check("page loads with no script errors", not errors, "; ".join(errors))
         check("empty state is visible before a dial is chosen",
               page.is_visible("#empty-state"), "the prompt should be showing")
+        # This is why the server root is the repo: a preview/-only server
+        # makes the manifest 404 and the library silently disappears, and the
+        # "no script errors" check above is what notices.
+        check("the dial library select is populated",
+              not page.eval_on_selector("#dial-select", "el => el.disabled"),
+              "the select should be enabled when ../dials/manifest.json resolves")
 
         for label, path in DIALS:
             print(f"\n--- {label}")
             errors.clear()
-            page.goto(base)
+            page.goto(base + "/preview/index.html")
             page.wait_for_timeout(300)
             page.set_input_files("#file-input", str(path))
             page.wait_for_timeout(900)
@@ -185,7 +197,7 @@ def main():
         # A file that is not a dial at all must fail cleanly.
         print("\n--- error handling")
         errors.clear()
-        page.goto(base)
+        page.goto(base + "/preview/index.html")
         page.wait_for_timeout(300)
         page.evaluate(
             """() => {
