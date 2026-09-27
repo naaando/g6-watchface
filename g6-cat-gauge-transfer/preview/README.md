@@ -181,7 +181,7 @@ re-check.
 ```bash
 node tests/bin-decoder.test.js     # 82 checks: header, RLE, geometry, errors
 node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
-python3 tests/browser/render.test.py  # 36 checks: real Chromium, real pixels
+python3 tests/browser/render.test.py  # 33 checks: real Chromium, real pixels
 node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
 ```
 
