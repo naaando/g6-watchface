@@ -119,6 +119,68 @@ h1 {
   cursor: pointer;
 }
 
+/* ─── Details Disclosure ─────────────────────────────────────────────────── */
+
+/* The detail controls (time sliders, indicator values, dev toggles) live
+   behind a collapsed <details> so the default view is just the watchface. */
+
+.details-panel {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid #2f2f4a;
+  border-radius: 8px;
+  background: #16162a;
+}
+
+.details-summary {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: #ccc;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.details-summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Custom disclosure triangle so it does not depend on the UA marker. */
+.details-summary::before {
+  content: '\25B8';
+  display: inline-block;
+  font-size: 0.7rem;
+  color: #4a9eff;
+  transition: transform 0.15s ease;
+}
+
+.details-panel[open] .details-summary::before {
+  transform: rotate(90deg);
+}
+
+.details-summary:hover {
+  color: #fff;
+  background: #1c1c34;
+}
+
+.details-summary:focus-visible {
+  outline: 2px solid #4a9eff;
+  outline-offset: -2px;
+}
+
+.details-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid #2f2f4a;
+}
+
+.details-body .controls {
+  margin-top: 14px;
+}
+
 /* ─── Comparison Row ─────────────────────────────────────────────────────── */
 
 .comparison-row {

@@ -223,7 +223,7 @@
 
   /**
    * Create a fresh default watchface state.
-   * @returns {{hour: number, minute: number, second: number, battery: number, steps: number, progress: number, digitalMode: boolean}}
+   * @returns {{hour: number, minute: number, second: number, battery: number, steps: number, progress: number, digitalMode: boolean, realTime: boolean}}
    */
   function createDefaultState() {
     return {
@@ -234,6 +234,11 @@
       steps: 5,
       progress: 6,
       digitalMode: false,
+      // On by default: the preview should show the actual current time when
+      // opened, without the user having to reach for a control. The detail
+      // sliders are hidden behind the "Detalhes" toggle, so this is the mode
+      // you get for free.
+      realTime: true,
       animFrame: 0,
       // Off by default: the current background is a still image, so the
       // BLK_ANIMPART overlay would just sit on top of it. Tick the
@@ -270,24 +275,36 @@
   }
 
   /**
+   * Read the current local time as a state partial.
+   * @returns {{hour: number, minute: number, second: number}}
+   */
+  function currentTimeState() {
+    const now = new Date();
+    return {
+      hour: now.getHours(),
+      minute: now.getMinutes(),
+      second: now.getSeconds()
+    };
+  }
+
+  /**
    * Start a real-time clock that updates state from local time every second.
+   * Applies the current time immediately so the preview is correct on load
+   * rather than showing a stale value for up to a second.
    * @returns {number} Timer ID
    */
   function startClock() {
     stopClock();
+    setState(Object.assign({ realTime: true }, currentTimeState()));
     _clockTimerId = setInterval(function() {
-      const now = new Date();
-      setState({
-        hour: now.getHours(),
-        minute: now.getMinutes(),
-        second: now.getSeconds()
-      });
+      setState(currentTimeState());
     }, 1000);
     return _clockTimerId;
   }
 
   /**
-   * Stop the real-time clock timer.
+   * Stop the real-time clock timer, leaving realTime as-is so the caller
+   * decides what the resulting state should be.
    */
   function stopClock() {
     if (_clockTimerId !== null) {
@@ -430,6 +447,7 @@
   global.getHandPivot = getHandPivot;
   global.renderWatchface = renderWatchface;
   global.createDefaultState = createDefaultState;
+  global.currentTimeState = currentTimeState;
   global.getState = getState;
   global.setState = setState;
   global.setRenderCallback = setRenderCallback;
@@ -449,7 +467,7 @@
     module.exports = {
       loadImage, drawStaticLayers, drawHand, getHandPivot, renderWatchface,
       createDefaultState, getState, setState, setRenderCallback,
-      startClock, stopClock,
+      currentTimeState, startClock, stopClock,
       startAnimation, stopAnimation, drawAnimFrame, drawAnimation,
       drawDigitalConcept, toggleDigitalConcept, toggleReference, exportPng
     };

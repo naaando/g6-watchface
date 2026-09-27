@@ -88,20 +88,31 @@ python3 make-anim-strip.py source.gif assets/animpart.png --frames 6 --size 150
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Digital time overlay | **CONCEPT ONLY** | Drawn programmatically on canvas. Not part of the actual BIN. Clearly labeled "DIGITAL CONCEPT — SIMULATED". |
-| Real-time clock | **SIMULATED** | Uses browser's `Date` object. On the actual device, time comes from the watch's RTC. |
+| Real-time clock | **SIMULATED** | Uses browser's `Date` object, on by default. On the actual device, time comes from the watch's RTC. |
 | Battery/Steps/Progress values | **SIMULATED** | Controlled via sliders. On the device, these come from actual sensors. |
 
 ## Controls
 
-- **Hour / Minute / Second sliders** — Set hand positions manually
+The preview opens in a clean state: just the watchface running on the system
+clock. Everything else is behind the **Detalhes** disclosure.
+
+Always visible:
+
+- **Real-time Clock** — Animate hands using system time. On by default.
+- **Detalhes** — Expands the inspection controls below.
+- **Download PNG** — Export the current canvas as `g6-watchface-preview.png`
+
+Inside **Detalhes**:
+
+- **Hour / Minute / Second sliders** — Set hand positions manually. Touching any
+  of them stops the real-time clock and unchecks it, since you are asking for a
+  fixed time.
 - **Battery slider** — Select battery level (0-5)
 - **Steps slider** — Select step count (0-9)
 - **Progress slider** — Select progress value (0-10)
-- **Real-time Clock** — Animate hands using system time
 - **Digital Concept** — Toggle the simulated digital time overlay
 - **Animation** — Pause/resume the `BLK_ANIMPART` loop (shown only when an animation layer is present)
 - **Reference** — Show the official reference image (`../preview-with-official-hands.png`) next to the canvas for comparison
-- **Download PNG** — Export the current canvas as `g6-watchface-preview.png`
 
 ## Generating New Images for the Compiler
 
