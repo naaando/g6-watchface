@@ -54,6 +54,28 @@
   var DEFAULT_FRAME_MS = 130;
 
   /**
+   * Stand-in complication values, used until the user moves a slider.
+   *
+   * They have to be plausible rather than zero: a battery strip's frame 0 is
+   * its *empty, red* frame, and a 0 % battery is also what a decode failure
+   * looks like. Placeholder data that reads as "broken" defeats the purpose
+   * of a preview.
+   */
+  var PLACEHOLDERS = {
+    batteryPercent: 60,
+    // A `digits:steps` field is three glyphs wide, so anything past 999 is
+    // truncated on the left. The placeholder stays inside the field: "000"
+    // from 5000 reads as a broken complication, not as a step count.
+    steps: 4820,
+    pulse: 72,
+    calories: 400,
+    distanceKm: 3,
+    temperatureC: 22,
+    connected: true,
+    weatherCode: 0
+  };
+
+  /**
    * @param {{
    *   canvas: HTMLCanvasElement,
    *   decoder?: object,
@@ -80,19 +102,7 @@
     this.description = null;
     this.error = null;
 
-    this.data = Object.assign({}, this.renderer.defaultDataProvider(), {
-      // Placeholder complication values. Without these a dial with a battery
-      // strip renders frame 0, which reads as "empty" and is hard to tell
-      // apart from a decode failure.
-      batteryPercent: 60,
-      steps: 5000,
-      pulse: 72,
-      calories: 400,
-      distanceKm: 3,
-      temperatureC: 22,
-      connected: true,
-      weatherCode: 0
-    });
+    this.data = Object.assign({}, this.renderer.defaultDataProvider(), PLACEHOLDERS);
     this.realTime = options.realTime !== false;
     this.animationFrame = 0;
 
@@ -217,7 +227,7 @@
     this.realTime = !!on;
     if (this.realTime) {
       this._stoppedAt = null;
-      this.data = Object.assign(this.data, this.renderer.defaultDataProvider());
+      this._syncClock();
     } else if (!this._stoppedAt) {
       this._stoppedAt = {
         hour: this.data.hour,
@@ -228,16 +238,28 @@
     this._emit();
   };
 
+  /**
+   * Refresh only the wall-clock fields, leaving every complication value
+   * alone. See `clockData()` in the renderer for why this is not just
+   * `defaultDataProvider()`.
+   */
+  DialApp.prototype._syncClock = function () {
+    var clock = this.renderer.clockData
+      ? this.renderer.clockData()
+      : this.renderer.defaultDataProvider();
+    this.data = Object.assign(this.data, clock);
+  };
+
   /** Begin ticking. Safe to call when already running. */
   DialApp.prototype.startClock = function () {
     var self = this;
     if (this._clockTimer) return;
     // Apply the current time immediately. Waiting for the first tick leaves a
     // dead second on screen at load, which reads as a bug.
-    this.data = Object.assign(this.data, this.renderer.defaultDataProvider());
+    this._syncClock();
     this._clockTimer = setInterval(function () {
       if (self.realTime) {
-        self.data = Object.assign(self.data, self.renderer.defaultDataProvider());
+        self._syncClock();
         self._emit();
       }
     }, 1000);

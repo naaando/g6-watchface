@@ -304,6 +304,103 @@ check('frame selection can never run off the end of a strip', () => {
   }
 });
 
+check('a number is spelled as a fixed-width, zero-padded field', () => {
+  // The watch shows 3 o'clock as "03", so padding is the behaviour to match.
+  assertEqual(R.padNumber(3, 2), '03', 'a single digit pads on the left');
+  assertEqual(R.padNumber(27, 2), '27', 'a full field is untouched');
+  assertEqual(R.padNumber(311, 3), '311', 'three digits in a three-glyph field');
+  assertEqual(R.padNumber(0, 2), '00', 'zero pads rather than vanishing');
+  // Too long: keep what is significant instead of dropping a leading digit.
+  assertEqual(R.padNumber(4820, 3), '820', 'an over-long value keeps its low digits');
+  assertEqual(R.padNumber(-5, 2), '00', 'negatives clamp to zero, not to a minus sign');
+  assertEqual(R.padNumber(7.9, 2), '07', 'fractions truncate');
+  assertEqual(R.padNumber(undefined, 2), '00', 'missing data must not spell NaN');
+  assertEqual(R.padNumber(NaN, 2), '00', 'NaN must not spell NaN');
+  assertEqual(R.padNumber(5, 1), '5', 'a one-glyph field shows no padding');
+  for (const [value, width] of [[0, 2], [99, 2], [12345, 4], [7, 3]]) {
+    assertEqual(R.padNumber(value, width).length, width, `${value} in ${width} glyphs`);
+  }
+});
+
+check('only single-digit strips are repeated into a number', () => {
+  const strip = (name, frames) => ({ name, frames, width: 8, height: 12, posx: 0, posy: 0 });
+  assert(R.isDigitStrip('digits:steps', strip('steps', 10)), 'a 10-frame digit strip repeats');
+  assert(R.isDigitStrip('digits:hours', strip('hours', 10)), 'so does the hour field');
+  assert(!R.isDigitStrip('digits:month', strip('month', 12)),
+    'a 12-frame month block is a JAN..DEC name strip, not digits');
+  assert(R.isDigitStrip('digits:month', strip('month', 10)),
+    'a 10-frame month block is digits');
+  assert(!R.isDigitStrip('digits:year', strip('year', 10)),
+    'a four-digit year has no glyph set on a ten-frame strip');
+  assert(!R.isDigitStrip('digit:hour_hi', strip('hour_hi', 10)),
+    'an explicit one-glyph block must not be repeated');
+  assert(!R.isDigitStrip('progress:progress2', strip('progress2', 11)),
+    'a gauge is not a number');
+});
+
+check('a numeric role reports the whole number, not just its ones digit', () => {
+  const block = { name: 'steps', frames: 10, width: 8, height: 12 };
+  // The old code folded everything through `% 10` here, which is what threw
+  // away every digit but the last one before it was ever drawn.
+  assertEqual(R.numberForRole('steps', { steps: 4820 }, block), 4820, 'steps keeps all digits');
+  assertEqual(R.numberForRole('hours', { hour: 3 }, block), 3, 'hours is not folded to 12h here');
+  assertEqual(R.numberForRole('minutes', { minute: 7 }, block), 7, 'minutes too');
+  assertEqual(R.numberForRole('day', { date: new Date(2026, 8, 27) }, block), 27, 'the 27th');
+  assertEqual(R.numberForRole('month', { date: new Date(2026, 8, 27) }, block), 9, 'September is 9');
+  assertEqual(
+    R.numberForRole('month', { date: new Date(2026, 8, 27) }, { frames: 12 }), 8,
+    'a name strip reports the zero-based month index'
+  );
+  // valueForRole still picks a single frame, and that behaviour is unchanged.
+  assertEqual(R.valueForRole('steps', { steps: 4820 }, block), 0, 'frame 0 is the 0 glyph');
+  assertEqual(R.valueForRole('steps', { steps: 4823 }, block), 3, 'frame 3 is the 3 glyph');
+});
+
+check('every repeated field has a declared width', () => {
+  for (const field of ['hours', 'minutes', 'seconds', 'month', 'day', 'steps', 'pulse', 'calor']) {
+    assert(
+      Number.isInteger(R.DIGIT_COUNTS[field]) && R.DIGIT_COUNTS[field] >= 1,
+      `no glyph width declared for the ${field} field`
+    );
+  }
+});
+
+check('the clock refresh cannot clobber a complication value', () => {
+  // Regression: the app merged the whole default provider on every tick, which
+  // reset every sensor to null, so a battery strip drew its empty red frame 0
+  // and every indicator bar drew an empty gauge. clockData() is the fix, and
+  // it only works if it really is clock-only.
+  const clock = R.clockData();
+  const sensorFields = [
+    'batteryPercent', 'steps', 'pulse', 'calories',
+    'distanceKm', 'temperatureC', 'connected', 'weatherCode'
+  ];
+  for (const field of sensorFields) {
+    assert(!(field in clock), `clockData() must not carry ${field}`);
+  }
+  assert('hour' in clock && 'minute' in clock && 'second' in clock && 'weekday' in clock,
+    'clockData() must carry the clock');
+  // And merging it into a populated state has to leave the state alone.
+  const state = Object.assign(R.defaultDataProvider(), { batteryPercent: 60, steps: 4820 });
+  const merged = Object.assign(state, clock);
+  assertEqual(merged.batteryPercent, 60, 'battery survives a clock tick');
+  assertEqual(merged.steps, 4820, 'steps survive a clock tick');
+  assert(Number.isInteger(merged.hour), 'the hour still updates');
+});
+
+check('the undocumented 0x21 ring is driven by pulse, not by battery', () => {
+  const ring = { name: 'pulse_ring', frames: 6, width: 100, height: 100, posx: 0, posy: 0 };
+  assertEqual(R.roleOf(ring), 'progress:pulse', '0x21 plays the pulse ring');
+  const quiet = R.frameForBlock(ring, { pulse: 60, batteryPercent: 100 });
+  const racing = R.frameForBlock(ring, { pulse: 180, batteryPercent: 100 });
+  assert(racing > quiet, 'a faster pulse fills more of the ring');
+  assertEqual(
+    R.frameForBlock(ring, { pulse: 60, batteryPercent: 0 }),
+    R.frameForBlock(ring, { pulse: 60, batteryPercent: 100 }),
+    'the battery must not move the pulse ring'
+  );
+});
+
 console.log(`\n${passed} checks passed, ${failures.length} failed`);
 for (const f of failures) console.log(`  FAIL ${f}`);
 process.exit(failures.length ? 1 : 0);

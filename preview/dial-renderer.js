@@ -74,6 +74,7 @@
     temp: 'digits:temp',
     progress2: 'progress:progress2',
     progress1: 'progress:progress1',
+    pulse_ring: 'progress:pulse',
     label: 'label',
     hour_lo: 'digit:hour_lo',
     hour_hi: 'digit:hour_hi',
@@ -113,13 +114,7 @@
    * screenshot usable for every dial.
    */
   function defaultDataProvider() {
-    var now = new Date();
-    return {
-      date: now,
-      hour: now.getHours(),
-      minute: now.getMinutes(),
-      second: now.getSeconds(),
-      weekday: now.getDay(),
+    return Object.assign(clockData(), {
       batteryPercent: null,
       steps: null,
       pulse: null,
@@ -128,6 +123,29 @@
       temperatureC: null,
       connected: null,
       weatherCode: null
+    });
+  }
+
+  /**
+   * The five fields that come from the wall clock, and nothing else.
+   *
+   * This exists because `defaultDataProvider()` also carries the sensor
+   * fields, and merging it wholesale into live state on every tick used to
+   * wipe whatever the app had put there — every complication silently fell
+   * back to `null`, so a battery strip drew its empty (red) frame 0 and an
+   * indicator bar drew an empty gauge. Refreshing the clock must touch the
+   * clock and nothing else.
+   *
+   * @returns {{date: Date, hour: number, minute: number, second: number, weekday: number}}
+   */
+  function clockData() {
+    var now = new Date();
+    return {
+      date: now,
+      hour: now.getHours(),
+      minute: now.getMinutes(),
+      second: now.getSeconds(),
+      weekday: now.getDay()
     };
   }
 
@@ -158,6 +176,10 @@
     } else if (role === 'progress:progress1' || role === 'progress:progress2') {
       // Eleven frames for a 0-100% arc, so frame 10 is the full ring.
       index = Math.round((clampNumber(data.batteryPercent, 0, 100) / 100) * (frames - 1));
+    } else if (role === 'progress:pulse') {
+      // The pulse ring is a 0-200 bpm gauge, not a percentage: a resting
+      // heart rate has to land in the middle of the ring, not near empty.
+      index = Math.round((clampNumber(data.pulse, 0, 200) / 200) * (frames - 1));
     } else if (role === 'weekday') {
       index = clampNumber(data.weekday, 0, 6);
     } else if (role === 'toggle:ampm') {
@@ -205,54 +227,87 @@
   }
 
   /**
+   * The full number a `digits:<field>` role displays.
+   *
+   * A block in this family is a strip of ten single-digit glyphs, and the
+   * firmware draws that one glyph N times side by side to spell a
+   * zero-padded number — `month` is a 14x20 one-digit strip, yet the watch
+   * shows "09". So the block knows only the ones digit; the width of the
+   * number comes from `DIGIT_COUNTS` and the value comes from here.
+   *
+   * `year` is the exception: it keeps a single frame because a 4-digit year
+   * on a ten-frame strip has no glyph set for it.
+   */
+  function numberForRole(field, data, block) {
+    switch (field) {
+      case 'year':
+        return data.date instanceof Date ? data.date.getFullYear() : new Date().getFullYear();
+      case 'month':
+        // A 12-frame month block spells month NAMES (JAN..DEC), so it indexes
+        // the strip directly and is not a digit strip at all. A 10-frame one
+        // spells digits and displays the number.
+        return block.frames >= 12
+          ? (data.date instanceof Date ? data.date.getMonth() : 0)
+          : (data.date instanceof Date ? data.date.getMonth() + 1 : 1);
+      case 'day':
+        return data.date instanceof Date ? data.date.getDate() : 1;
+      case 'hours':
+        return clampNumber(data.hour, 0, 23);
+      case 'minutes':
+        return clampNumber(data.minute, 0, 59);
+      case 'seconds':
+        return clampNumber(data.second, 0, 59);
+      case 'steps':
+        return clampNumber(data.steps, 0, 99999);
+      case 'pulse':
+        return clampNumber(data.pulse, 0, 999);
+      case 'calor':
+        return clampNumber(data.calories, 0, 9999);
+      case 'dist':
+        return clampNumber(data.distanceKm, 0, 99);
+      case 'battery':
+        return clampNumber(data.batteryPercent, 0, 100);
+      case 'temp':
+        return Math.abs(clampNumber(data.temperatureC, -50, 99));
+      default:
+        return 0;
+    }
+  }
+
+  /**
+   * How many glyphs wide a `digits:<field>` number is on the watch.
+   *
+   * Read off a photo of a live 0.0_G6_captured_618808.bin, whose month and
+   * day blocks are single-digit strips yet display "09" and "27" and whose
+   * `steps` block displays three digits. Nothing in the .bin states this, so
+   * it is a table rather than a derivation — if a dial disagrees, this is
+   * the one place to change it.
+   */
+  var DIGIT_COUNTS = {
+    hours: 2,
+    minutes: 2,
+    seconds: 2,
+    month: 2,
+    day: 2,
+    steps: 3,
+    pulse: 2,
+    calor: 3,
+    dist: 2,
+    battery: 3,
+    temp: 2
+  };
+
+  /**
    * Map a `digits:<field>` role onto a number whose last digit selects the
    * frame. Two-digit fields keep only their ones digit because the guide
    * specifies ten frames, 0-9.
    */
   function valueForRole(field, data, block) {
-    var value;
-    switch (field) {
-      case 'year':
-        value = data.date instanceof Date ? data.date.getFullYear() : new Date().getFullYear();
-        return value % 10;
-      case 'month': {
-        // Frame count decides the mapping, per the guide: twelve frames are
-        // month NAMES (JAN..DEC) so the month indexes directly, ten frames
-        // are DIGITS so only the ones digit is used. The 11359 dial ships a
-        // 12-frame month block; the guide's 10-frame case is the fallback.
-        var month = data.date instanceof Date ? data.date.getMonth() : 0;
-        return block.frames >= 12 ? month : (month + 1) % 10;
-      }
-      case 'day':
-        value = data.date instanceof Date ? data.date.getDate() : 1;
-        return value % 10;
-      case 'hours':
-        return clampNumber(data.hour, 0, 23) % 10;
-      case 'minutes':
-        return clampNumber(data.minute, 0, 59) % 10;
-      case 'seconds':
-        return clampNumber(data.second, 0, 59) % 10;
-      case 'steps':
-        value = clampNumber(data.steps, 0, 99999);
-        return value % 10;
-      case 'pulse':
-        value = clampNumber(data.pulse, 0, 999);
-        return value % 10;
-      case 'calor':
-        value = clampNumber(data.calories, 0, 9999);
-        return value % 10;
-      case 'dist':
-        value = clampNumber(data.distanceKm, 0, 99);
-        return value % 10;
-      case 'battery':
-        value = clampNumber(data.batteryPercent, 0, 100);
-        return value % 10;
-      case 'temp':
-        value = clampNumber(data.temperatureC, -50, 99);
-        return value < 0 ? 0 : value % 10;
-      default:
-        return 0;
+    // A 12-frame month block is a name strip, so it indexes directly.
+    if (field === 'month' && block && block.frames >= 12) {
+      return numberForRole(field, data, block);
     }
+    return numberForRole(field, data, block) % 10;
   }
 
   // ─── Drawing ──────────────────────────────────────────────────────────────
@@ -272,8 +327,47 @@
     // origin, but honour the descriptor anyway in case a dial does not.
     ctx.drawImage(source, 0, sy, block.width, block.height,
       block.posx, block.posy, block.width, block.height);
-    ctx.drawImage(source, 0, sy, block.width, block.height,
-      block.posx, block.posy, block.width, block.height);
+  }
+
+  /**
+   * Spell `value` as exactly `digits` glyphs, zero-padded on the left.
+   *
+   * Padding is what the watch does — a 3 o'clock hour shows "03" — and a
+   * value too long for the field keeps its significant digits rather than
+   * having a leading digit silently dropped.
+   *
+   * @param {number} value
+   * @param {number} digits
+   * @returns {string} exactly `digits` characters, each '0'-'9'
+   */
+  function padNumber(value, digits) {
+    var text = String(Math.max(0, Math.floor(value || 0)));
+    if (text.length > digits) text = text.slice(text.length - digits);
+    while (text.length < digits) text = '0' + text;
+    return text;
+  }
+
+  /**
+   * Draw a single-digit strip as a multi-digit number.
+   *
+   * The firmware repeats one glyph to spell a zero-padded number, so this
+   * draws the same frame of the same strip once per digit, advancing one
+   * sprite width each time. The block's posx/posy is the left edge of the
+   * whole number, not of one digit.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {object} block a `digits:<field>` block
+   * @param {number} value the number to display
+   * @param {number} digits how many glyphs wide to spell it in
+   */
+  function drawNumber(ctx, block, value, digits) {
+    var text = padNumber(value, digits);
+    var source = block.canvas || block.strip;
+    for (var i = 0; i < text.length; i++) {
+      var sy = Number(text.charAt(i)) * block.height;
+      ctx.drawImage(source, 0, sy, block.width, block.height,
+        block.posx + i * block.width, block.posy, block.width, block.height);
+    }
   }
 
   /**
@@ -344,6 +438,21 @@
   }
 
   /**
+   * Whether a `digits:<field>` role is a strip of single-digit glyphs that
+   * should be repeated to spell a number, rather than one frame per value.
+   *
+   * The exceptions are a 12-frame `month` block, whose frames are the month
+   * NAMES JAN..DEC, and `year`, whose four digits have no glyph set on a
+   * ten-frame strip. Both stay one-frame-one-value.
+   */
+  function isDigitStrip(role, block) {
+    if (role.indexOf('digits:') !== 0) return false;
+    var field = role.slice('digits:'.length);
+    if (field === 'year') return false;
+    return !(field === 'month' && block.frames >= 12);
+  }
+
+  /**
    * Paint a whole dial.
    *
    * @param {CanvasRenderingContext2D} ctx a 466x466 (or larger) 2D context
@@ -372,6 +481,9 @@
 
       if (role === 'arm_hour' || role === 'arm_minute' || role === 'arm_second') {
         drawHand(ctx, block, handAngle(role, data), helper);
+      } else if (isDigitStrip(role, block)) {
+        var field = role.slice('digits:'.length);
+        drawNumber(ctx, block, numberForRole(field, data, block), DIGIT_COUNTS[field] || 1);
       } else {
         drawBlock(ctx, block, frameForBlock(block, data, frameInfo));
       }
@@ -472,6 +584,10 @@
     ROLE: ROLE,
     BATTERY_STRIP_BANDS: BATTERY_STRIP_BANDS,
     defaultDataProvider: defaultDataProvider,
+    clockData: clockData,
+    DIGIT_COUNTS: DIGIT_COUNTS,
+    numberForRole: numberForRole,
+    valueForRole: valueForRole,
     frameForBlock: frameForBlock,
     handAngle: handAngle,
     roleOf: roleOf,
@@ -479,6 +595,9 @@
     renderDial: renderDial,
     materialize: materialize,
     drawBlock: drawBlock,
+    drawNumber: drawNumber,
+    padNumber: padNumber,
+    isDigitStrip: isDigitStrip,
     drawHand: drawHand,
     isOnScreen: isOnScreen
   };

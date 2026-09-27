@@ -114,6 +114,9 @@
     0x1A: 'temp',
     0x1E: 'progress2',
     0x20: 'progress1',
+    // Not in Fogg's table. Inferred: a six-frame 100x100 ring sitting beside
+    // the `pulse` block on a live dial, showing a segmented heart-rate ring.
+    0x21: 'pulse_ring',
     0x25: 'label',
     0x27: 'hour_lo',
     0x28: 'hour_hi',
@@ -150,6 +153,7 @@
     0x1A: 'Temperature',
     0x1E: 'Progress bar 2',
     0x20: 'Progress bar 1',
+    0x21: 'Pulse ring (name inferred, undocumented in Fogg)',
     0x25: 'Label',
     0x27: 'Hours low digit',
     0x28: 'Hours high digit',

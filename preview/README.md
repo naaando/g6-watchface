@@ -159,6 +159,35 @@ Which field drives which block is also easy to get wrong, because the roles are
 independent: `progress2` is an arc driven by the **battery** percentage, not by
 calories. Moving the calorie slider does nothing to it.
 
+### One glyph, drawn N times: how a `.bin` spells "03"
+
+A single-digit block does not mean a single-digit display. The firmware repeats
+the glyph to spell a zero-padded number, and the block's `posx` is the left
+edge of the whole number, not of one digit.
+
+`0.0_G6_captured_618808.bin` is the proof. Its `month` block is a 14x20 strip of
+ten digits, and its `hours` block is 62x90 — yet the watch shows "09/27" and
+"03:07". Drawing each block once, the obvious reading, gives "9", "7" and "5".
+
+So the preview composes the number itself: `numberForRole` returns the whole
+value, `padNumber` spells it at a fixed width, and `drawNumber` draws one
+sprite per character, advancing a sprite width each time.
+
+**How many glyphs is not in the file.** Nothing in the `.bin` states the width,
+so it is a table — `DIGIT_COUNTS` in `dial-renderer.js` — read off a photo of
+the live watch. `steps` is three digits there, `pulse` is two, and both blocks
+are the same 12x18 sprite. If a dial disagrees with the table, that table is the
+one place to change it. `isDigitStrip` keeps the exceptions honest: a 12-frame
+`month` block holds the month **names** JAN..DEC, and `year` has no four-digit
+glyph set, so neither is repeated.
+
+### Type `0x21` is undocumented
+
+`0.21` is not in Fogg's `BLOCK_TYPE_NAMES`. It appears on the captured dial as a
+six-frame 100x100 ring sitting beside the `pulse` block and showing a segmented
+heart-rate ring, so the decoder names it `pulse_ring` and the renderer drives it
+from the pulse. Treat that as an inference from one dial, not a spec.
+
 ---
 
 ## Reusable modules
@@ -201,6 +230,7 @@ node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
 python3 tests/browser/render.test.py    # 33 checks: index.html in real Chromium
 python3 tests/browser/authoring.test.py # 7 checks: authoring.html boots, assets resolve
 python3 tests/browser/indicators.test.py # 10 checks: complications draw and follow their slider
+python3 tests/browser/digits.test.py     # 14 checks: multi-digit spelling, placeholders survive the clock
 node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
 ```
 
@@ -222,6 +252,12 @@ up as a test failure rather than a silently different preview. Regenerate with
 - **A test that never fails is not a test.** The first draft of the renderer
   tests asserted that indicator strips contain artwork, which is wrong for the
   `cat-gauge` builds. It looked like a decoder bug and was a bad assumption.
+- **Refreshing the clock must not touch anything else.** The app merged the
+  renderer's whole default data provider on every tick, which reset every
+  complication to `null`. The battery strip's frame 0 is its *empty red* frame,
+  so the dial rendered a critical battery and empty gauges on a healthy watch —
+  and no decode was at fault. `clockData()` exists so a tick can only move the
+  clock; `digits.test.py` fails if the sensor fields come back.
 
 ---
 
@@ -249,7 +285,9 @@ preview/                   # repository root
 │   └── browser/
 │       ├── render.test.py       # index.html in Chromium
 │       ├── authoring.test.py    # authoring.html in Chromium
-│       └── indicators.test.py   # complications draw and follow their slider
+│       ├── indicators.test.py   # complications draw and follow their slider
+│       ├── digits.test.py       # multi-digit spelling, placeholders vs the clock
+│       └── inspect-dial.py      # not a test: dumps what a given .bin renders
 ├── *-smoke.html          # authoring.html smoke tests
 └── assets/               # authoring.html's layer images
 ```

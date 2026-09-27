@@ -126,7 +126,7 @@ try:
         # their last digit; progress2 is a battery arc, not a calorie arc.
         for block, slider, low, high, restore in [
             ("battery_strip", "#battery", 0, 100, 60),
-            ("steps", "#steps", 1230, 5679, 5000),
+            ("steps", "#steps", 1230, 5679, 4820),
             ("progress2", "#battery", 0, 100, 60),
         ]:
             set_value(page, slider, low)
