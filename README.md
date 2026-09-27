@@ -40,5 +40,6 @@ node preview/tests/bin-decoder.test.js              # 82 structural checks
 node preview/tests/dial-renderer.test.js            # frame selection, hand angles
 python3 preview/tests/browser/render.test.py        # 33 checks in real Chromium
 python3 preview/tests/browser/authoring.test.py     # authoring.html boots and its assets resolve
+python3 preview/tests/browser/indicators.test.py    # complications draw and follow their slider
 python3 preview/validate-preview-assets.py          # authoring.html assets vs dial_desc.json
 ```

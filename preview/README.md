@@ -143,7 +143,21 @@ One alpha byte, then RGB565 big-endian. The name is misleading.
 The `cat-gauge` builds write all-zero RGBA for `battery_strip`, `steps` and
 `progress2` on purpose — see `trek-watchfaces/build_cat_gauge_analog_test.py`.
 The artwork does not suit them. So "this indicator decodes to nothing" is not
-necessarily a bug; compare against the build script before chasing it.
+necessarily a bug; compare against the build script before chasing it. The
+stock `0.0_AM05_G6_11448` *does* carry real indicator artwork, so use it when
+you want to prove the complication path works.
+
+### A 10-frame block shows ONE digit, so the slider must reach one
+
+Most `digits:` blocks have 10 frames and render a single digit — the frame index
+is the value modulo 10. That makes the control's step size load-bearing: a
+`steps` slider with `step="100"` can only ever land on values ending in 0, so
+the block is pinned to frame 0 and looks permanently blank even though the
+decode is perfect. `step="1"` is the fix. This shipped once.
+
+Which field drives which block is also easy to get wrong, because the roles are
+independent: `progress2` is an arc driven by the **battery** percentage, not by
+calories. Moving the calorie slider does nothing to it.
 
 ---
 
@@ -186,6 +200,7 @@ node tests/bin-decoder.test.js     # 82 checks: header, RLE, geometry, errors
 node tests/dial-renderer.test.js   # 21 checks: frame selection, hand angles
 python3 tests/browser/render.test.py    # 33 checks: index.html in real Chromium
 python3 tests/browser/authoring.test.py # 7 checks: authoring.html boots, assets resolve
+python3 tests/browser/indicators.test.py # 10 checks: complications draw and follow their slider
 node tests/compare-with-reference.js --all  # parity with Fogg/comp_decomp.py
 ```
 
@@ -233,7 +248,8 @@ preview/                   # repository root
 │   ├── golden.json
 │   └── browser/
 │       ├── render.test.py       # index.html in Chromium
-│       └── authoring.test.py    # authoring.html in Chromium
+│       ├── authoring.test.py    # authoring.html in Chromium
+│       └── indicators.test.py   # complications draw and follow their slider
 ├── *-smoke.html          # authoring.html smoke tests
 └── assets/               # authoring.html's layer images
 ```

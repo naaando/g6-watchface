@@ -208,7 +208,9 @@
     </div>
     <div class="control">
       <label for="steps">Steps</label>
-      <input type="range" id="steps" min="0" max="99999" step="100" value="5000">
+      <!-- step=1, not 100: a 10-frame block renders the LAST digit, so a
+           coarser step would pin the frame at 0 forever and look broken. -->
+      <input type="range" id="steps" min="0" max="99999" step="1" value="5000">
       <output id="steps-out">5000</output>
     </div>
     <div class="control">
@@ -218,7 +220,8 @@
     </div>
     <div class="control">
       <label for="calories">Calories</label>
-      <input type="range" id="calories" min="0" max="9999" step="10" value="400">
+      <!-- step=1 for the same reason as steps: the block shows one digit. -->
+      <input type="range" id="calories" min="0" max="9999" step="1" value="400">
       <output id="calories-out">400</output>
     </div>
     <div class="control">
