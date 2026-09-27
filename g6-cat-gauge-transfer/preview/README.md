@@ -19,8 +19,14 @@ google-chrome index.html
 Append `?dial=<id>` to the URL:
 
 ```
-open 'index.html?dial=11448'
+open "file://$PWD/index.html?dial=11448"
 ```
+
+> **macOS `open` caveat:** `open index.html?dial=11448` fails with
+> "No such file or directory". `open` treats the `?` as part of the filename
+> rather than starting a query string. Pass a full `file://` URL instead, as
+> above. Double-clicking `index.html` in Finder is unaffected, but Finder
+> cannot pass a query string — use the `open` form to switch dials.
 
 | id | Dial |
 |---|---|
