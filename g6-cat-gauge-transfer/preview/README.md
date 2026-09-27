@@ -30,6 +30,30 @@ google-chrome index.html
 
 All positions, dimensions, and rotation centers come from `dial_desc.json` in the BIN descriptor.
 
+#### Arm rotation pivots (`ctx` / `cty`)
+
+The `ctx` / `cty` fields in `dial_desc.json` are named misleadingly. Verified
+against the extracted sprites of this dial:
+
+| block | width | height | `ctx` | `cty` | real pivot (x, y) |
+|---|---|---|---|---|---|
+| `BLK_ARM_HOUR` | 18 | 132 | 2 | 9 | (9, 130) |
+| `BLK_ARM_MINUTE` | 16 | 182 | 2 | 8 | (8, 180) |
+| `BLK_ARM_SECOND` | 28 | 256 | 44 | 14 | (14, 212) |
+
+- `cty` is the **horizontal** offset from the left edge, and equals `width / 2`
+  for all three hands.
+- `ctx` is the distance from the **bottom** edge to the pivot, so
+  `pivotY = height - ctx`. It is *not* a distance from the top.
+
+`getHandPivot(block)` in `preview.js` implements this. Getting it wrong renders
+every hand 180° off while still converging on the dial centre, so the error is
+easy to miss by eye — the in-browser check is to render at 10:08:30 and compare
+each hand's tip angle (expected 304° / 51° / 180°) via `getImageData`.
+
+Note: `Fogg/docs/DIAL_FORMAT_GUIDE.md` section E described these fields
+incorrectly; it has been corrected in the local Fogg checkout.
+
 ### Optional Blocks (not in this dial's descriptor)
 
 | Layer | Source | Description |
