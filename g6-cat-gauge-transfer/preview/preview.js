@@ -45,6 +45,42 @@
   }
 
   /**
+   * Draw a single frame from a VERTICAL strip.
+   *
+   * BLK_ANIMPART assets are packed as a vertical strip (one frame per
+   * `frameHeight` row band) by make-anim-strip.py, which mirrors what the
+   * firmware's Animation Slicer produces. Indicator blocks like battery and
+   * steps use horizontal strips instead — see drawSpriteFrame.
+   *
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {HTMLImageElement} image - Vertical strip image
+   * @param {object} block - Layer config block
+   * @param {number} frameIndex - Frame index to draw
+   */
+  function drawAnimFrame(ctx, image, block, frameIndex) {
+    const fw = block.frameWidth;
+    const fh = block.frameHeight;
+    const sx = 0;
+    const sy = frameIndex * fh;
+    ctx.drawImage(image, sx, sy, fw, fh, block.posx, block.posy, block.width, block.height);
+  }
+
+  /**
+   * Draw the BLK_ANIMPART looping animation, if the layer is enabled.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {object} images - Map of loaded images
+   * @param {number} frameIndex - Current animation frame
+   * @param {boolean} enabled
+   */
+  function drawAnimation(ctx, images, frameIndex, enabled) {
+    if (!enabled) return;
+    const anim = CONFIG.layers.anim;
+    if (!anim || !images.anim) return;
+    const idx = ((frameIndex % anim.frames) + anim.frames) % anim.frames;
+    drawAnimFrame(ctx, images.anim, anim, idx);
+  }
+
+  /**
    * Draw static layers: background and indicators (battery, steps, progress).
    * @param {CanvasRenderingContext2D} ctx
    * @param {object} images - Map of loaded images
@@ -80,6 +116,37 @@
   }
 
   /**
+   * Resolve the pixel-space rotation pivot of an arm sprite.
+   *
+   * The `ctx` / `cty` fields in dial_desc.json do NOT mean what their names
+   * suggest, and the prose in DIAL_FORMAT_GUIDE.md section E is wrong about
+   * them. Verified against the extracted sprites of this dial:
+   *
+   *   block             width  height  ctx  cty   -> real pivot (x, y)
+   *   BLK_ARM_HOUR        18    132     2    9      (9, 130)   cty = 18/2
+   *   BLK_ARM_MINUTE      16    182     2    8      (8, 180)   cty = 16/2
+   *   BLK_ARM_SECOND      28    256    44   14      (14, 212)  cty = 28/2
+   *
+   * So: `cty` is the horizontal center of the sprite, and `ctx` is the
+   * distance from the BOTTOM edge to the pivot (i.e. pivot Y = height - ctx).
+   *
+   * Cross-checked against the pixel data: the second hand's visible hub spans
+   * rows 198..220 (center 209) and the computed pivot is y=212; its long tip
+   * runs up to y=35 with a 40px tail below the pivot. The hour and minute
+   * sprites are fully opaque above their computed pivots (y 0..129 and
+   * y 1..179), meaning they point straight up at angle 0.
+   *
+   * @param {object} block - Layer config block with width, height, ctx, cty
+   * @returns {{x: number, y: number}} Pivot in image pixel coordinates
+   */
+  function getHandPivot(block) {
+    return {
+      x: block.cty,
+      y: block.height - block.ctx
+    };
+  }
+
+  /**
    * Draw a hand (hour, minute, or second) at the correct center with rotation.
    * @param {CanvasRenderingContext2D} ctx
    * @param {HTMLImageElement} image - Hand sprite image
@@ -87,13 +154,13 @@
    * @param {number} angle - Rotation angle in degrees (clockwise, 0 = 12 o'clock)
    */
   function drawHand(ctx, image, block, angle) {
-    const centerX = block.posx;
-    const centerY = block.posy;
+    const pivot = getHandPivot(block);
     ctx.save();
-    ctx.translate(centerX, centerY);
+    ctx.translate(block.posx, block.posy);
     ctx.rotate(angle * Math.PI / 180);
-    // The sprite is offset so that the rotation point (ctx, cty) is at the origin
-    ctx.drawImage(image, -block.ctx, -block.cty);
+    // Offset the sprite so its pivot lands on the origin, which now sits at
+    // posx/posy (the screen center for all three hands).
+    ctx.drawImage(image, -pivot.x, -pivot.y);
     ctx.restore();
   }
 
@@ -134,6 +201,14 @@
       drawHand(ctx, images.second, secondBlock, secondAngle);
     }
 
+    // BLK_ANIMPART looping animation (optional block, decorative)
+    drawAnimation(
+      ctx,
+      images,
+      state.animFrame || 0,
+      state.animEnabled !== false
+    );
+
     // Digital concept overlay (simulated — not part of the actual BIN)
     if (state.digitalMode) {
       drawDigitalConcept(ctx, state);
@@ -158,7 +233,12 @@
       battery: 4,
       steps: 5,
       progress: 6,
-      digitalMode: false
+      digitalMode: false,
+      animFrame: 0,
+      // Off by default: the current background is a still image, so the
+      // BLK_ANIMPART overlay would just sit on top of it. Tick the
+      // "Animation" checkbox to enable it.
+      animEnabled: false
     };
   }
 
@@ -213,6 +293,36 @@
     if (_clockTimerId !== null) {
       clearInterval(_clockTimerId);
       _clockTimerId = null;
+    }
+  }
+
+  // ─── Animation Loop ────────────────────────────────────────────────────────
+
+  let _animTimerId = null;
+
+  /**
+   * Start the BLK_ANIMPART playback loop.
+   * Frame timing comes from the layer's `frameMs` (100ms = 10fps).
+   * @returns {number} Timer ID
+   */
+  function startAnimation() {
+    stopAnimation();
+    const anim = CONFIG.layers.anim;
+    if (!anim) return null;
+    const ms = anim.frameMs || 100;
+    _animTimerId = setInterval(function() {
+      setState({ animFrame: (_state.animFrame + 1) % anim.frames });
+    }, ms);
+    return _animTimerId;
+  }
+
+  /**
+   * Stop the animation playback loop.
+   */
+  function stopAnimation() {
+    if (_animTimerId !== null) {
+      clearInterval(_animTimerId);
+      _animTimerId = null;
     }
   }
 
@@ -317,6 +427,7 @@
   global.loadImage = loadImage;
   global.drawStaticLayers = drawStaticLayers;
   global.drawHand = drawHand;
+  global.getHandPivot = getHandPivot;
   global.renderWatchface = renderWatchface;
   global.createDefaultState = createDefaultState;
   global.getState = getState;
@@ -324,6 +435,10 @@
   global.setRenderCallback = setRenderCallback;
   global.startClock = startClock;
   global.stopClock = stopClock;
+  global.startAnimation = startAnimation;
+  global.stopAnimation = stopAnimation;
+  global.drawAnimFrame = drawAnimFrame;
+  global.drawAnimation = drawAnimation;
   global.drawDigitalConcept = drawDigitalConcept;
   global.toggleDigitalConcept = toggleDigitalConcept;
   global.toggleReference = toggleReference;
@@ -332,9 +447,10 @@
   // Also export for module environments
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
-      loadImage, drawStaticLayers, drawHand, renderWatchface,
+      loadImage, drawStaticLayers, drawHand, getHandPivot, renderWatchface,
       createDefaultState, getState, setState, setRenderCallback,
       startClock, stopClock,
+      startAnimation, stopAnimation, drawAnimFrame, drawAnimation,
       drawDigitalConcept, toggleDigitalConcept, toggleReference, exportPng
     };
   }

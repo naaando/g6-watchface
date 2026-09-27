@@ -66,6 +66,10 @@
       <input type="checkbox" id="ctrl-reference">
       Reference
     </label>
+    <label class="toggle-label" id="anim-toggle-label" hidden>
+      <input type="checkbox" id="ctrl-anim">
+      Animation (BLK_ANIMPART)
+    </label>
   </div>
 
   <div class="controls">
@@ -92,17 +96,26 @@
         return;
       }
 
-      // Load all images
-      const layerNames = ['background', 'battery', 'steps', 'progress', 'hour', 'minute', 'second'];
+      // Load all images. The anim layer is optional: if it is missing from
+      // config.js or fails to load, the preview still works without animation.
+      const layerNames = ['background', 'battery', 'steps', 'progress', 'hour', 'minute', 'second', 'anim'];
       const images = {};
       const loadPromises = layerNames.map(function(name) {
-        return loadImage(WATCHFACE_CONFIG.layers[name].src)
+        const layer = WATCHFACE_CONFIG.layers[name];
+        if (!layer) return Promise.resolve();
+
+        return loadImage(layer.src)
           .then(function(img) { images[name] = img; })
           .catch(function(err) {
+            // Optional blocks degrade gracefully; required ones are fatal.
+            if (layer.optional) {
+              console.warn('Optional layer ' + name + ' failed to load:', err);
+              return;
+            }
             console.error('Failed to load ' + name + ':', err);
             statusEl.textContent = 'Error loading ' + name + ': ' + err.message;
             statusEl.className = 'status error';
-            errorOverlay.textContent = 'Failed to load image: ' + WATCHFACE_CONFIG.layers[name].src;
+            errorOverlay.textContent = 'Failed to load image: ' + layer.src;
             errorOverlay.style.display = 'flex';
             throw err;
           });
@@ -133,11 +146,21 @@
 
         const clockToggle = document.getElementById('ctrl-clock');
         const digitalToggle = document.getElementById('ctrl-digital');
+        const animToggle = document.getElementById('ctrl-anim');
+        const animToggleLabel = document.getElementById('anim-toggle-label');
         const referenceToggle = document.getElementById('ctrl-reference');
         const exportBtn = document.getElementById('btn-export');
 
         // Sync controls from state
         function syncControlsFromState() {
+          // Don't fight the user: the animation loop re-renders ~10x/sec, so
+          // skip the control sync while a slider has focus mid-drag.
+          const active = document.activeElement;
+          const dragging = Object.keys(controls).some(function(k) {
+            return controls[k] === active;
+          });
+          if (dragging) return;
+
           const s = getState();
           controls.hour.value = s.hour;
           controls.minute.value = s.minute;
@@ -153,6 +176,7 @@
           valueLabels.battery.textContent = s.battery;
           valueLabels.steps.textContent = s.steps;
           valueLabels.progress.textContent = s.progress;
+          animToggle.checked = s.animEnabled;
         }
 
         // Render callback — called by setState
@@ -194,6 +218,19 @@
           toggleReference(referenceToggle.checked);
         });
 
+        // Animation toggle — only shown when a BLK_ANIMPART layer loaded
+        if (images.anim) {
+          animToggleLabel.hidden = false;
+          animToggle.addEventListener('change', function() {
+            setState({ animEnabled: animToggle.checked });
+            if (animToggle.checked) {
+              startAnimation();
+            } else {
+              stopAnimation();
+            }
+          });
+        }
+
         // Export button
         exportBtn.addEventListener('click', function() {
           const link = exportPng();
@@ -203,6 +240,15 @@
         // Initial render
         syncControlsFromState();
         renderWatchface(ctx, images, getState());
+
+        // Start the BLK_ANIMPART loop only if the strip loaded and the user
+        // wants it. animEnabled defaults to false, so the still background
+        // shows through until the checkbox is ticked.
+        if (images.anim && getState().animEnabled) {
+          startAnimation();
+        }
+      }).catch(function(err) {
+        console.error('Initialization failed:', err);
       });
     })();
   </script>

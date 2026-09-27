@@ -20,7 +20,7 @@ google-chrome index.html
 
 | Layer | Source | Description |
 |-------|--------|-------------|
-| Background | `assets/background.png` | 466×466 background image |
+| Background | `assets/cat-background.png` | 466×466 background image (art swapped freely; the filename need not match the BIN) |
 | Battery | `assets/battery_strip.png` | 6-frame battery indicator (0-5) |
 | Steps | `assets/steps.png` | 10-frame step counter (0-9) |
 | Progress | `assets/progress2.png` | 11-frame progress ring (0-10) |
@@ -29,6 +29,35 @@ google-chrome index.html
 | Second hand | `assets/arm_second.png` | Rotating second hand |
 
 All positions, dimensions, and rotation centers come from `dial_desc.json` in the BIN descriptor.
+
+### Optional Blocks (not in this dial's descriptor)
+
+| Layer | Source | Description |
+|-------|--------|-------------|
+| Animation | `assets/animpart.png` | `BLK_ANIMPART` (0x17) looping animation, 6 frames at 100ms (10fps) |
+
+`BLK_ANIMPART` is a real firmware block type that this particular dial does not
+use, so it is absent from `dial_desc.json`. Layers like this are marked
+`optional: true` in `config.js`; the validator checks them against the format
+guide's constraints instead of the descriptor, and the preview degrades
+gracefully if the asset is missing.
+
+Constraints from `Fogg/docs/DIAL_FORMAT_GUIDE.md` (section G):
+
+- The block must fit inside the 466×466 screen
+- Recommended maximum: ~150×150 px, 5–12 frames
+- `ctx = 10` selects time-based looping
+- Full-screen 466×466 animations exist (dial templates 3274, 7235, 10044) but
+  stay at **4–6 frames** — 10 full-screen frames exceed 4 MB of raw frame
+  buffer and will crash the watch
+
+Animation assets are **vertical strips**: one frame per `frameHeight` row band.
+Indicator blocks (battery, steps, progress) are **horizontal strips**. Build a
+strip from a GIF or video with:
+
+```bash
+python3 make-anim-strip.py source.gif assets/animpart.png --frames 6 --size 150
+```
 
 ### Simulated / Conceptual
 
@@ -46,6 +75,7 @@ All positions, dimensions, and rotation centers come from `dial_desc.json` in th
 - **Progress slider** — Select progress value (0-10)
 - **Real-time Clock** — Animate hands using system time
 - **Digital Concept** — Toggle the simulated digital time overlay
+- **Animation** — Pause/resume the `BLK_ANIMPART` loop (shown only when an animation layer is present)
 - **Reference** — Show the official reference image (`../preview-with-official-hands.png`) next to the canvas for comparison
 - **Download PNG** — Export the current canvas as `g6-watchface-preview.png`
 
@@ -71,9 +101,13 @@ preview/
 ├── export-smoke.html   # Export smoke test
 ├── compositor-smoke.html  # Compositor smoke test
 ├── state-smoke.html    # State management smoke test
+├── validate-preview-assets.py  # Asset/geometry validator (stdlib only)
+├── make-anim-strip.py  # Build a BLK_ANIMPART vertical strip from GIF/video
 ├── README.md           # This file
 └── assets/             # Layer images
-    ├── background.png
+    ├── cat-background.png  # Active background (art is swappable)
+    ├── background.png      # Original background from the BIN
+    ├── animpart.png        # BLK_ANIMPART vertical strip (6 frames)
     ├── battery_strip.png
     ├── steps.png
     ├── progress2.png

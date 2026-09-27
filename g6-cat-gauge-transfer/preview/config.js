@@ -6,7 +6,10 @@ const WATCHFACE_CONFIG = {
   height: 466,
   layers: {
     background: {
-      src: 'assets/background.png',
+      // Block type from dial_desc.json. The `src` filename is free to change:
+      // the preview is meant to swap art without touching the descriptor.
+      block: 'BLK_BACKGROUND',
+      src: 'assets/cat-background.png',
       width: 466,
       height: 466,
       posx: 0,
@@ -18,6 +21,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 466
     },
     battery: {
+      block: 'BLK_BATTERY_STRIP',
       src: 'assets/battery_strip.png',
       width: 110,
       height: 110,
@@ -30,6 +34,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 110
     },
     steps: {
+      block: 'BLK_STEPS',
       src: 'assets/steps.png',
       width: 12,
       height: 18,
@@ -42,6 +47,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 18
     },
     progress: {
+      block: 'BLK_PROGRESS2',
       src: 'assets/progress2.png',
       width: 110,
       height: 110,
@@ -54,6 +60,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 110
     },
     hour: {
+      block: 'BLK_ARM_HOUR',
       src: 'assets/arm_hour.png',
       width: 18,
       height: 132,
@@ -66,6 +73,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 132
     },
     minute: {
+      block: 'BLK_ARM_MINUTE',
       src: 'assets/arm_minute.png',
       width: 16,
       height: 182,
@@ -78,6 +86,7 @@ const WATCHFACE_CONFIG = {
       frameHeight: 182
     },
     second: {
+      block: 'BLK_ARM_SECOND',
       src: 'assets/arm_second.png',
       width: 28,
       height: 256,
@@ -88,6 +97,25 @@ const WATCHFACE_CONFIG = {
       frames: 1,
       frameWidth: 28,
       frameHeight: 256
+    },
+    // Decorative looping animation. Not present in dial_desc.json — this is an
+    // optional block type (0x17) the firmware supports but the current dial
+    // does not use. src is a vertical strip: frames stacked top to bottom.
+    // ctx = 10 selects time-based looping per the format guide.
+    anim: {
+      block: 'BLK_ANIMPART',
+      optional: true,
+      src: 'assets/animpart.png',
+      width: 150,
+      height: 150,
+      posx: 158,
+      posy: 158,
+      ctx: 10,
+      cty: 0,
+      frames: 8,
+      frameWidth: 150,
+      frameHeight: 150,
+      frameMs: 130
     }
   }
 };
