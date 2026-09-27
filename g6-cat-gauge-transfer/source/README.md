@@ -9,3 +9,13 @@ This version uses the earlier blue, textured cat artwork and the eight block lay
 The BIN compiled and decoded successfully. All eight block layouts match the official source. The decoded preview, background, and three hands match their inputs within RGB565 quantization (maximum 7 per RGB channel), and hidden complication layers remain transparent.
 
 The previews approximate the device's hand rotation; the BIN has not yet been installed or tested on the G6.
+
+## Validação de assets da prévia
+
+Antes de recompilar o BIN, valide os assets do sistema de prévia:
+
+```bash
+python3 ../preview/validate-preview-assets.py
+```
+
+Isso garante que os PNGs em `preview/assets/` estão consistentes com `../assets/dial_desc.json` e que o canvas é 466×466. Após a validação, copie os assets atualizados para `assets/` e execute o compilador.

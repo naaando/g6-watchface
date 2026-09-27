@@ -1,0 +1,171 @@
+/* G6 Watchface Preview Styles */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.watchface-container {
+  position: relative;
+  width: 466px;
+  height: 466px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: #000;
+}
+
+#watchface-canvas {
+  display: block;
+  width: 466px;
+  height: 466px;
+}
+
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(180, 30, 30, 0.85);
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+  border-radius: 50%;
+}
+
+.controls {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.controls input[type="range"] {
+  width: 80px;
+  accent-color: #4a9eff;
+}
+
+.controls .value {
+  font-size: 0.85rem;
+  color: #fff;
+  margin-top: 2px;
+}
+
+.status {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.status.error {
+  color: #ff6b6b;
+}
+
+.status.success {
+  color: #51cf66;
+}
+
+.controls-toggles {
+  margin-top: 12px;
+  gap: 20px;
+}
+
+.toggle-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #ccc;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  accent-color: #4a9eff;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* ─── Comparison Row ─────────────────────────────────────────────────────── */
+
+.comparison-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.reference-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.reference-container img {
+  width: 466px;
+  height: 466px;
+  border-radius: 50%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  object-fit: cover;
+}
+
+.reference-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-align: center;
+}
+
+/* ─── Export Button ──────────────────────────────────────────────────────── */
+
+.btn-export {
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-export:hover {
+  background: #3a8eef;
+}
+
+.btn-export:active {
+  background: #2a7edf;
+}

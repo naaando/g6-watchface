@@ -10,8 +10,76 @@ Este pacote contém o watchface de teste inspirado no medidor do Need for Speed 
 - `preview-digital-concept.png`: conceito visual com hora digital; os dígitos ainda não estão no BIN analógico.
 - `assets/`: fundo, ponteiros, sprites e descrição do dial.
 - `source/`: script e descrição usados na compilação.
+- `preview/`: sistema de prévia em canvas (HTML/JS) com validação de assets.
 - `sender/`: projeto-fonte do APK, sem `build/` e sem caminhos locais do SDK.
 - `KNOWLEDGE.md`: conhecimento técnico consolidado e limites conhecidos.
+
+## Workflow completo: edição → compilação → verificação → APK
+
+### 1. Editar a prévia (opcional)
+
+Abra `preview/index.html` em um navegador para visualizar e ajustar o watchface interativamente.
+
+```bash
+# A partir da raiz do projeto
+open g6-cat-gauge-transfer/preview/index.html
+```
+
+A prévia usa `config.js` (posições, dimensões e rotações) e os assets em `preview/assets/`. Para modificar o visual, edite os PNGs em `preview/assets/` e ajuste `config.js` conforme necessário.
+
+### 2. Validar assets da prévia
+
+Antes de compilar, verifique se todos os assets estão corretos e consistentes com o `dial_desc.json`:
+
+```bash
+python3 g6-cat-gauge-transfer/preview/validate-preview-assets.py
+```
+
+Saída esperada: `preview assets: PASS`
+
+O script verifica:
+- Todos os arquivos referenciados em `config.js` existem em `preview/assets/`
+- O canvas é 466×466
+- Os nomes dos blocos correspondem ao `dial_desc.json`
+- Todos os blocos do `dial_desc.json` (exceto `BLK_PREV`) têm uma camada correspondente em `config.js`
+
+### 3. Exportar assets para compilação
+
+Copie os PNGs de `preview/assets/` para `assets/` (o diretório usado pelo compilador):
+
+```bash
+cp preview/assets/*.png assets/
+```
+
+### 4. Compilar o BIN
+
+Use o script de compilação em `source/` para gerar o BIN a partir de `assets/dial_desc.json`:
+
+```bash
+cd source
+python3 compile.py  # ou o script de compilação disponível
+```
+
+### 5. Verificar os 8 blocos
+
+Após a compilação, valide se os 8 blocos do BIN correspondem ao `dial_desc.json`:
+
+```bash
+python3 source/validate-bin.py  # se disponível
+```
+
+### 6. Construir o APK
+
+```bash
+cd sender
+./gradlew assembleDebug -PbuildPython=/opt/homebrew/bin/python3.12
+```
+
+### 7. Instalar e testar
+
+```bash
+adb install -r sender/app/build/outputs/apk/debug/app-debug.apk
+```
 
 ## Procedimento seguro de transferência
 

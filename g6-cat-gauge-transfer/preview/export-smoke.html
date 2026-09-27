@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export Smoke Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    h1 { font-size: 1.2rem; margin-bottom: 16px; }
+    #result {
+      font-size: 1rem;
+      padding: 16px 24px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+    #result.pass { background: #1b5e20; color: #a5d6a7; }
+    #result.fail { background: #5e1b1b; color: #ef9a9a; }
+    #result.running { background: #1b3a5e; color: #90caf9; }
+  </style>
+</head>
+<body>
+  <h1>Export Smoke Test</h1>
+  <div id="result" class="running">Running...</div>
+
+  <script src="config.js"></script>
+  <script src="preview.js"></script>
+  <script>
+    (function() {
+      const resultEl = document.getElementById('result');
+
+      try {
+        // Check Canvas 2D support
+        const testCanvas = document.createElement('canvas');
+        if (!testCanvas.getContext) {
+          throw new Error('Canvas 2D not supported in this browser');
+        }
+
+        // Check exportPng exists
+        if (typeof exportPng !== 'function') {
+          throw new Error('exportPng is not defined');
+        }
+
+        // Create a canvas and render something
+        const canvas = document.createElement('canvas');
+        canvas.width = 466;
+        canvas.height = 466;
+        const ctx = canvas.getContext('2d');
+
+        // Draw something visible
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, 466, 466);
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('Test', 10, 30);
+
+        // Temporarily override the canvas lookup for exportPng
+        // exportPng looks for #watchface-canvas, so we need to add it to DOM
+        canvas.id = 'watchface-canvas';
+        document.body.appendChild(canvas);
+
+        // Call exportPng
+        const link = exportPng();
+
+        // Verify result
+        if (!link) throw new Error('exportPng returned null/undefined');
+        if (!(link instanceof HTMLAnchorElement)) throw new Error('exportPng did not return an HTMLAnchorElement');
+        if (!link.href) throw new Error('link has no href');
+        if (!link.href.startsWith('blob:')) throw new Error('link href does not start with blob: — got: ' + link.href);
+        if (link.download !== 'g6-watchface-preview.png') throw new Error('link download should be g6-watchface-preview.png — got: ' + link.download);
+
+        // Cleanup
+        document.body.removeChild(canvas);
+        URL.revokeObjectURL(link.href);
+
+        resultEl.textContent = 'PASS — exportPng returns anchor with blob: href and correct download name';
+        resultEl.className = 'pass';
+      } catch (err) {
+        resultEl.textContent = 'FAIL — ' + err.message;
+        resultEl.className = 'fail';
+        console.error(err);
+      }
+    })();
+  </script>
+</body>
+</html>

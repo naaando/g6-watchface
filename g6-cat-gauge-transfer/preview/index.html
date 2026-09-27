@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G6 Watchface Preview</title>
+  <link rel="stylesheet" href="preview.css">
+</head>
+<body>
+  <h1>G6 Watchface Preview</h1>
+
+  <div class="comparison-row">
+    <div class="watchface-container">
+      <canvas id="watchface-canvas" width="466" height="466"></canvas>
+      <div id="error-overlay" class="error-overlay" style="display: none;"></div>
+    </div>
+    <div id="reference-container" class="reference-container" style="display: none;">
+      <img id="reference-image" src="../preview-with-official-hands.png" alt="Reference watchface with official hands">
+      <div class="reference-label">Reference (Official)</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <label>
+      Hour
+      <input type="range" id="ctrl-hour" min="0" max="23" value="10">
+      <span class="value" id="val-hour">10</span>
+    </label>
+    <label>
+      Minute
+      <input type="range" id="ctrl-minute" min="0" max="59" value="8">
+      <span class="value" id="val-minute">08</span>
+    </label>
+    <label>
+      Second
+      <input type="range" id="ctrl-second" min="0" max="59" value="30">
+      <span class="value" id="val-second">30</span>
+    </label>
+    <label>
+      Battery
+      <input type="range" id="ctrl-battery" min="0" max="5" value="4">
+      <span class="value" id="val-battery">4</span>
+    </label>
+    <label>
+      Steps
+      <input type="range" id="ctrl-steps" min="0" max="9" value="5">
+      <span class="value" id="val-steps">5</span>
+    </label>
+    <label>
+      Progress
+      <input type="range" id="ctrl-progress" min="0" max="10" value="6">
+      <span class="value" id="val-progress">6</span>
+    </label>
+  </div>
+
+  <div class="controls controls-toggles">
+    <label class="toggle-label">
+      <input type="checkbox" id="ctrl-clock">
+      Real-time Clock
+    </label>
+    <label class="toggle-label">
+      <input type="checkbox" id="ctrl-digital">
+      Digital Concept
+    </label>
+    <label class="toggle-label">
+      <input type="checkbox" id="ctrl-reference">
+      Reference
+    </label>
+  </div>
+
+  <div class="controls">
+    <button id="btn-export" class="btn-export" type="button">Download PNG</button>
+  </div>
+
+  <div id="status" class="status">Loading...</div>
+
+  <script src="config.js"></script>
+  <script src="preview.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('watchface-canvas');
+      const statusEl = document.getElementById('status');
+      const errorOverlay = document.getElementById('error-overlay');
+
+      // Check Canvas 2D support
+      const ctx = canvas.getContext && canvas.getContext('2d');
+      if (!ctx) {
+        statusEl.textContent = 'Canvas 2D is not supported in this browser.';
+        statusEl.className = 'status error';
+        errorOverlay.textContent = 'Canvas 2D not supported. Please use a modern browser.';
+        errorOverlay.style.display = 'flex';
+        return;
+      }
+
+      // Load all images
+      const layerNames = ['background', 'battery', 'steps', 'progress', 'hour', 'minute', 'second'];
+      const images = {};
+      const loadPromises = layerNames.map(function(name) {
+        return loadImage(WATCHFACE_CONFIG.layers[name].src)
+          .then(function(img) { images[name] = img; })
+          .catch(function(err) {
+            console.error('Failed to load ' + name + ':', err);
+            statusEl.textContent = 'Error loading ' + name + ': ' + err.message;
+            statusEl.className = 'status error';
+            errorOverlay.textContent = 'Failed to load image: ' + WATCHFACE_CONFIG.layers[name].src;
+            errorOverlay.style.display = 'flex';
+            throw err;
+          });
+      });
+
+      Promise.all(loadPromises).then(function() {
+        statusEl.textContent = 'Ready';
+        statusEl.className = 'status success';
+
+        // Get control elements
+        const controls = {
+          hour: document.getElementById('ctrl-hour'),
+          minute: document.getElementById('ctrl-minute'),
+          second: document.getElementById('ctrl-second'),
+          battery: document.getElementById('ctrl-battery'),
+          steps: document.getElementById('ctrl-steps'),
+          progress: document.getElementById('ctrl-progress')
+        };
+
+        const valueLabels = {
+          hour: document.getElementById('val-hour'),
+          minute: document.getElementById('val-minute'),
+          second: document.getElementById('val-second'),
+          battery: document.getElementById('val-battery'),
+          steps: document.getElementById('val-steps'),
+          progress: document.getElementById('val-progress')
+        };
+
+        const clockToggle = document.getElementById('ctrl-clock');
+        const digitalToggle = document.getElementById('ctrl-digital');
+        const referenceToggle = document.getElementById('ctrl-reference');
+        const exportBtn = document.getElementById('btn-export');
+
+        // Sync controls from state
+        function syncControlsFromState() {
+          const s = getState();
+          controls.hour.value = s.hour;
+          controls.minute.value = s.minute;
+          controls.second.value = s.second;
+          controls.battery.value = s.battery;
+          controls.steps.value = s.steps;
+          controls.progress.value = s.progress;
+          digitalToggle.checked = s.digitalMode;
+
+          valueLabels.hour.textContent = s.hour;
+          valueLabels.minute.textContent = String(s.minute).padStart(2, '0');
+          valueLabels.second.textContent = String(s.second).padStart(2, '0');
+          valueLabels.battery.textContent = s.battery;
+          valueLabels.steps.textContent = s.steps;
+          valueLabels.progress.textContent = s.progress;
+        }
+
+        // Render callback — called by setState
+        function render(state) {
+          syncControlsFromState();
+          renderWatchface(ctx, images, state);
+        }
+
+        // Register render callback
+        setRenderCallback(render);
+
+        // Attach event listeners — controls update state
+        Object.keys(controls).forEach(function(key) {
+          controls[key].addEventListener('input', function() {
+            stopClock();
+            clockToggle.checked = false;
+            var partial = {};
+            partial[key] = parseInt(controls[key].value, 10);
+            setState(partial);
+          });
+        });
+
+        // Real-time clock toggle
+        clockToggle.addEventListener('change', function() {
+          if (clockToggle.checked) {
+            startClock();
+          } else {
+            stopClock();
+          }
+        });
+
+        // Digital concept toggle
+        digitalToggle.addEventListener('change', function() {
+          toggleDigitalConcept(digitalToggle.checked);
+        });
+
+        // Reference toggle
+        referenceToggle.addEventListener('change', function() {
+          toggleReference(referenceToggle.checked);
+        });
+
+        // Export button
+        exportBtn.addEventListener('click', function() {
+          const link = exportPng();
+          link.click();
+        });
+
+        // Initial render
+        syncControlsFromState();
+        renderWatchface(ctx, images, getState());
+      });
+    })();
+  </script>
+</body>
+</html>
