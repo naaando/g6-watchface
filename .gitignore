@@ -1,0 +1,17 @@
+# Android
+*.apk
+*.aab
+.gradle/
+build/
+
+# macOS
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Local env
+.env
+.env.local

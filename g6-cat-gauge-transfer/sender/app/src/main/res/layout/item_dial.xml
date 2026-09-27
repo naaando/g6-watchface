@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="?attr/foggCardBg"
+    android:paddingStart="12dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp"
+    android:layout_marginBottom="?attr/foggCardGap"
+    android:clickable="true"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/imgDialThumb"
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        android:scaleType="centerCrop"
+        android:background="?attr/foggBadgeBg"
+        android:layout_marginEnd="14dp"
+        android:contentDescription="@string/blk_preview"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtDialName"
+            style="@style/Fogg.CardTitle"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="Dial"/>
+
+        <TextView
+            android:id="@+id/txtDialSize"
+            style="@style/Fogg.Caption"
+            android:layout_marginTop="2dp"
+            android:text="12.3 KB"/>
+    </LinearLayout>
+
+    <!-- Origin chip: preset vs. user-made -->
+    <TextView
+        android:id="@+id/txtDialSource"
+        style="@style/Fogg.Caption"
+        android:background="?attr/foggChipBg"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/preset"
+        android:textColor="?attr/foggAccent"/>
+
+</LinearLayout>

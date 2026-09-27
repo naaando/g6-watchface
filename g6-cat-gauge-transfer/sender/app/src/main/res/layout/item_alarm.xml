@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="?attr/foggCardBg"
+    android:padding="?attr/foggCardPadding"
+    android:layout_marginBottom="?attr/foggCardGap">
+
+    <ImageView
+        style="?attr/foggRowIconStyle"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_alarm"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvAlarmTime"
+            style="@style/Fogg.MetricValue"/>
+
+        <TextView
+            android:id="@+id/tvAlarmRepeat"
+            style="@style/Fogg.Caption"
+            android:layout_marginTop="2dp"/>
+    </LinearLayout>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switchAlarm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>

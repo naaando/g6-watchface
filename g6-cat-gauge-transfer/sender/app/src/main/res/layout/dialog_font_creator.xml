@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/foggBgSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Live Preview -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:background="?attr/foggBgPrimary"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/imgFontPreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter"/>
+        </FrameLayout>
+
+        <!-- Font Selector -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/font_label"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="4dp"/>
+
+        <Spinner
+            android:id="@+id/spinnerFont"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:background="?attr/foggBgCard"
+            android:padding="8dp"
+            android:layout_marginBottom="4dp"/>
+
+    <!-- Custom source label and button -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/font_creator_step_font"
+        android:textColor="?attr/foggTextPrimary"
+        android:textAppearance="?attr/foggTextRowLabel"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLoadFont"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        app:icon="@android:drawable/ic_menu_agenda"
+        android:text="@string/font_creator_browse"
+        android:textStyle="bold"
+        android:textAppearance="?attr/foggTextRowLabel"
+        android:layout_marginBottom="16dp"/>
+
+        <!-- Language (Hidden by default) -->
+        <LinearLayout
+            android:id="@+id/containerLang"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/language"
+                android:textStyle="bold"
+                android:layout_marginEnd="16dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerLang"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+        </LinearLayout>
+
+        <!-- Custom Text (Hidden by default) -->
+        <TextView
+            android:id="@+id/lblCustom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/font_creator_step_text"
+            android:textColor="?attr/foggTextPrimary"
+            android:textAppearance="?attr/foggTextRowLabel"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/containerCustom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:visibility="gone"
+            android:hint="@string/font_creator_text_hint"
+            android:layout_marginBottom="16dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtCustom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Digit Size -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/digit_size"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="4dp"/>
+
+        <SeekBar
+            android:id="@+id/seekDigitSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:min="16"
+            android:max="120"
+            android:progress="48"
+            android:progressTint="?attr/foggAccent"
+            android:thumbTint="?attr/foggAccent"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Color -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/font_color"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="6dp"/>
+
+        <LinearLayout
+            android:id="@+id/colorPalette"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Glow / Shadow -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/glow_label"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="4dp"/>
+
+        <SeekBar
+            android:id="@+id/seekGlow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="20"
+            android:progress="0"
+            android:progressTint="?attr/foggSleep"
+            android:thumbTint="?attr/foggSleep"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Border / Outline -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/border_label"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="4dp"/>
+
+        <SeekBar
+            android:id="@+id/seekBorder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="10"
+            android:progress="0"
+            android:progressTint="?attr/foggAccent"
+            android:thumbTint="?attr/foggAccent"
+            android:layout_marginBottom="6dp"/>
+
+        <!-- Border Color -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/border_color"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="6dp"/>
+
+        <LinearLayout
+            android:id="@+id/borderColorPalette"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Spacing -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/spacing_label"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="4dp"/>
+
+        <SeekBar
+            android:id="@+id/seekSpacing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="40"
+            android:progress="0"
+            android:progressTint="?attr/foggAccent"
+            android:thumbTint="?attr/foggAccent"
+            android:layout_marginBottom="12dp"/>
+
+    </LinearLayout>
+</ScrollView>

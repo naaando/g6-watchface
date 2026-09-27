@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Me" tab. Rebuilt on the Fogg token system: every row leads with an icon,
+  section headers, dividers and inputs come from the theme, and the appearance
+  section previews whole design languages rather than colour swatches alone.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/foggBgPrimary"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout style="@style/Fogg.ScreenContent">
+
+        <!-- ═══════════ Profile ═══════════ -->
+        <LinearLayout
+            android:id="@+id/profileCard"
+            style="?attr/foggCardStyle"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/imgProfile"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/foggBadgeBg"
+                android:padding="14dp"
+                android:scaleType="centerCrop"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_nav_me"
+                app:tint="?attr/foggAccent"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/txtProfileName"
+                    style="@style/Fogg.CardTitle"
+                    android:text="@string/settings_profile"/>
+
+                <TextView
+                    android:id="@+id/txtProfileDevice"
+                    style="@style/Fogg.Caption"
+                    android:layout_marginTop="3dp"
+                    android:text="@string/settings_no_device"/>
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_edit"
+                app:tint="?attr/foggAccent"/>
+        </LinearLayout>
+
+        <!-- ═══════════ Appearance ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="2dp"
+            android:text="@string/settings_theme_title"/>
+
+        <TextView
+            style="@style/Fogg.Caption"
+            android:layout_marginBottom="12dp"
+            android:text="@string/settings_theme_subtitle"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:clipToPadding="false"
+            android:layout_marginBottom="?attr/foggSectionGap">
+
+            <LinearLayout
+                android:id="@+id/themeContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingVertical="4dp"/>
+        </HorizontalScrollView>
+
+        <!-- ═══════════ Daily goals ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:text="@string/settings_section_goals"/>
+
+        <LinearLayout style="?attr/foggGroupStyle">
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_metric_steps"
+                    android:contentDescription="@null" app:tint="?attr/foggSteps"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_goal_steps"/>
+                <TextView android:id="@+id/lblStepsUnit" style="@style/Fogg.Row.Value"
+                    android:text="@string/unit_steps_label"/>
+                <EditText
+                    android:id="@+id/etGoalSteps"
+                    style="@style/Fogg.Input.Inline"
+                    android:inputType="number"
+                    android:importantForAutofill="no"
+                    android:hint="@string/settings_goal_steps"/>
+            </LinearLayout>
+            <View style="?attr/foggDividerStyle"/>
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_metric_sleep"
+                    android:contentDescription="@null" app:tint="?attr/foggSleep"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_goal_sleep"/>
+                <TextView android:id="@+id/lblSleepUnit" style="@style/Fogg.Row.Value"
+                    android:text="@string/unit_minutes_label"/>
+                <EditText
+                    android:id="@+id/etGoalSleep"
+                    style="@style/Fogg.Input.Inline"
+                    android:inputType="number"
+                    android:importantForAutofill="no"
+                    android:hint="@string/settings_goal_sleep"/>
+            </LinearLayout>
+            <View style="?attr/foggDividerStyle"/>
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_metric_calories"
+                    android:contentDescription="@null" app:tint="?attr/foggCalories"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_goal_calories"/>
+                <TextView android:id="@+id/lblCalUnit" style="@style/Fogg.Row.Value"
+                    android:text="@string/unit_kcal_label"/>
+                <EditText
+                    android:id="@+id/etGoalCalories"
+                    style="@style/Fogg.Input.Inline"
+                    android:inputType="number"
+                    android:importantForAutofill="no"
+                    android:hint="@string/settings_goal_calories"/>
+            </LinearLayout>
+            <View style="?attr/foggDividerStyle"/>
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_metric_distance"
+                    android:contentDescription="@null" app:tint="?attr/foggDistance"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_goal_distance"/>
+                <TextView android:id="@+id/lblDistanceUnit" style="@style/Fogg.Row.Value"
+                    android:text="@string/unit_km"/>
+                <EditText
+                    android:id="@+id/etGoalDistance"
+                    style="@style/Fogg.Input.Inline"
+                    android:inputType="number"
+                    android:importantForAutofill="no"
+                    android:hint="@string/settings_goal_distance"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══════════ Units ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:text="@string/settings_section_units"/>
+
+        <LinearLayout style="?attr/foggGroupStyle">
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_units"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_unit_distance"/>
+                <Spinner
+                    android:id="@+id/spinnerDistance"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"/>
+            </LinearLayout>
+            <View style="?attr/foggDividerStyle"/>
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_goal"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_unit_weight"/>
+                <Spinner
+                    android:id="@+id/spinnerWeight"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ═══════════ Gauge style ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:text="@string/settings_section_gauge"/>
+
+        <LinearLayout style="?attr/foggGroupStyle">
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false"
+                android:paddingBottom="0dp">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_gauge_style"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_section_gauge"/>
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/radioGaugeStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="?attr/foggRowPaddingH"
+                android:paddingEnd="?attr/foggRowPaddingH"
+                android:paddingBottom="?attr/foggRowPaddingV">
+                <RadioButton
+                    android:id="@+id/radioGaugeA"
+                    style="@style/Fogg.Radio"
+                    android:text="@string/settings_gauge_a"/>
+                <RadioButton
+                    android:id="@+id/radioGaugeB"
+                    style="@style/Fogg.Radio"
+                    android:text="@string/settings_gauge_b"/>
+                <RadioButton
+                    android:id="@+id/radioGaugeC"
+                    style="@style/Fogg.Radio"
+                    android:text="@string/settings_gauge_c"/>
+            </RadioGroup>
+        </LinearLayout>
+
+        <!-- ═══════════ Language ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:text="@string/settings_section_language"/>
+
+        <LinearLayout style="?attr/foggGroupStyle">
+
+            <LinearLayout style="?attr/foggRowStyle" android:clickable="false" android:focusable="false"
+                android:paddingBottom="0dp">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_language"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_section_language"/>
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/radioLanguage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="?attr/foggRowPaddingH"
+                android:paddingEnd="?attr/foggRowPaddingH"
+                android:paddingBottom="?attr/foggRowPaddingV">
+                <RadioButton
+                    android:id="@+id/radioLangEs"
+                    style="@style/Fogg.Radio"
+                    android:text="@string/settings_lang_es"/>
+                <RadioButton
+                    android:id="@+id/radioLangEn"
+                    style="@style/Fogg.Radio"
+                    android:text="@string/settings_lang_en"/>
+            </RadioGroup>
+        </LinearLayout>
+
+        <!-- ═══════════ Data ═══════════ -->
+        <TextView
+            style="?attr/foggSectionHeaderStyle"
+            android:text="@string/settings_section_data"/>
+
+        <LinearLayout style="?attr/foggGroupStyle">
+
+            <LinearLayout android:id="@+id/rowImportData" style="?attr/foggRowStyle">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_import"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_import"/>
+                <ImageView style="@style/Fogg.Row.Chevron" android:contentDescription="@null"/>
+            </LinearLayout>
+            <View style="?attr/foggDividerStyle"/>
+
+            <LinearLayout android:id="@+id/rowExportData" style="?attr/foggRowStyle">
+                <ImageView style="?attr/foggRowIconStyle" android:src="@drawable/ic_export"
+                    android:contentDescription="@null"/>
+                <TextView style="@style/Fogg.Row.Label" android:text="@string/settings_export"/>
+                <ImageView style="@style/Fogg.Row.Chevron" android:contentDescription="@null"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Six taps unlock the developer tools. -->
+        <TextView
+            android:id="@+id/txtVersion"
+            style="@style/Fogg.Caption"
+            android:layout_width="match_parent"
+            android:gravity="center"
+            android:paddingTop="12dp"
+            android:paddingBottom="24dp"
+            android:text="@string/settings_version"/>
+    </LinearLayout>
+</ScrollView>

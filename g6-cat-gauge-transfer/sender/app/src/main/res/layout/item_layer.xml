@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="56dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="4dp"
+    android:background="?attr/foggBgCard"
+    android:layout_marginBottom="2dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Layer Thumbnail -->
+    <ImageView
+        android:id="@+id/imgLayerThumb"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:scaleType="centerCrop"
+        android:background="?attr/foggBgElevated"
+        android:layout_marginEnd="10dp"
+        android:contentDescription="@null"/>
+
+    <!-- Layer Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtLayerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Layer"
+            android:textColor="?attr/foggTextPrimary"
+            android:textAppearance="?attr/foggTextRowValue"
+            android:maxLines="1"
+            android:ellipsize="end"/>
+
+        <TextView
+            android:id="@+id/txtLayerType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BLK_BGIMG"
+            android:textColor="?attr/foggTextMuted"
+            android:textAppearance="?attr/foggTextCaption"
+            android:maxLines="1"/>
+    </LinearLayout>
+
+    <!-- Frame count badge -->
+    <TextView
+        android:id="@+id/txtFrameBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/foggChipBg"
+        android:paddingHorizontal="7dp"
+        android:paddingVertical="2dp"
+        android:text=""
+        android:textColor="?attr/foggAccent"
+        android:textAppearance="?attr/foggTextCaption"
+        android:visibility="gone"
+        android:layout_marginEnd="8dp"/>
+
+    <!-- Lock / delete: real vectors, not 🔓 and ✕ characters whose size and
+         shape depended on the device's emoji font. -->
+    <ImageView
+        android:id="@+id/btnLockLayer"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:padding="7dp"
+        android:src="@drawable/ic_lock_open"
+        android:contentDescription="@string/layer_lock"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        app:tint="?attr/foggTextSecondary"/>
+
+    <ImageView
+        android:id="@+id/btnDeleteLayer"
+        android:layout_width="34dp"
+        android:layout_height="34dp"
+        android:padding="7dp"
+        android:src="@drawable/ic_close"
+        android:contentDescription="@string/layer_delete"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        app:tint="?attr/foggDanger"/>
+</LinearLayout>

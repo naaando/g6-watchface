@@ -1,0 +1,4 @@
+e595160dec0dc1eacc1c6764921fb588ac642a4c93c0e47c0d0ab7fbf9b2a10d  g6-cat-gauge-transfer/cat-gauge-analog-test.bin
+eb3273a4cb4e4aaab8664a801d844f71cce40b8aaff55c11e4c2c566b6866534  g6-cat-gauge-transfer/cat-gauge-analog-test.apk
+a537da73ad1b49bff99926f8d40652a8313ccce12cba0345098c808bcd42ae45  g6-cat-gauge-transfer/preview-with-official-hands.png
+adcb7552624a189f839fbea37130af68fa63d9b63021c0337a147e27a8cfbc3f  g6-cat-gauge-transfer/preview-digital-concept.png

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/foggBgSurface"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/battery_builder_title"
+            android:textColor="?attr/foggTextPrimary"
+            android:textAppearance="?attr/foggTextScreenTitle"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Live Strip Preview -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:background="?attr/foggBgElevated"
+            android:padding="12dp"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:id="@+id/imgBatteryPreview0"
+                android:layout_width="40dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp" />
+            <ImageView
+                android:id="@+id/imgBatteryPreview1"
+                android:layout_width="40dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp" />
+            <ImageView
+                android:id="@+id/imgBatteryPreview2"
+                android:layout_width="40dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp" />
+            <ImageView
+                android:id="@+id/imgBatteryPreview3"
+                android:layout_width="40dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp" />
+            <ImageView
+                android:id="@+id/imgBatteryPreview4"
+                android:layout_width="40dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp" />
+            <ImageView
+                android:id="@+id/imgBatteryPreview5"
+                android:layout_width="40dp"
+                android:layout_height="36dp" />
+        </LinearLayout>
+
+        <!-- Style Selector -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/battery_style"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextRowValue"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <Spinner
+            android:id="@+id/spinnerBatteryStyle"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:background="?attr/foggBgElevated"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Color Mode -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/color_mode"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextRowValue"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <RadioGroup
+            android:id="@+id/rgBatteryColorMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <RadioButton
+                android:id="@+id/rbColorDynamic"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/color_dynamic"
+                android:textColor="?attr/foggTextPrimary"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/rbColorSolid"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/color_solid"
+                android:textColor="?attr/foggTextPrimary" />
+        </RadioGroup>
+
+        <!-- Dimensions -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginEnd="6dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/width"
+                    android:textColor="?attr/foggTextMuted"
+                    android:textAppearance="?attr/foggTextCaption" />
+                <EditText
+                    android:id="@+id/edtBatteryWidth"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:inputType="number"
+                    android:text="84"
+                    android:textColor="?attr/foggTextPrimary"
+                    android:background="?attr/foggBgElevated"
+                    android:padding="6dp"
+                    android:textAppearance="?attr/foggTextRowValue" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="6dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/height"
+                    android:textColor="?attr/foggTextMuted"
+                    android:textAppearance="?attr/foggTextCaption" />
+                <EditText
+                    android:id="@+id/edtBatteryHeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:inputType="number"
+                    android:text="75"
+                    android:textColor="?attr/foggTextPrimary"
+                    android:background="?attr/foggBgElevated"
+                    android:padding="6dp"
+                    android:textAppearance="?attr/foggTextRowValue" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/chkShowLightning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/battery_show_lightning"
+            android:textColor="?attr/foggTextPrimary"
+            android:checked="true"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Apply Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnApplyBattery"
+            style="@style/ButtonSuccess"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/battery_apply"
+            android:textAppearance="?attr/foggTextRowLabel" />
+
+    </LinearLayout>
+</ScrollView>

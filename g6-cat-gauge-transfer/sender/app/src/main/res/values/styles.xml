@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+         Manifest-level fallback. Real theming happens at runtime through
+         ThemeManager.applyTheme(); inheriting from a concrete Fogg theme keeps
+         every fogg* attribute resolvable for anything that starts before that.
+    -->
+    <style name="AppTheme" parent="Theme.Fogg.Midnight"/>
+
+
+
+
+
+
+
+    <!--
+         ══════════════════════════════════════════════════════════════════
+         Legacy style names, re-pointed at the Fogg token system.
+
+         Screens still written against these names inherit the active theme's
+         colours, radii, density and type without being rewritten. New screens
+         should use the Fogg.* styles in styles_fogg.xml directly.
+         ══════════════════════════════════════════════════════════════════
+    -->
+    <style name="CardStyle" parent="Fogg.Card"/>
+    <style name="ScreenTitle" parent="Fogg.ScreenTitle"/>
+    <style name="ToolbarStyle" parent="Fogg.Toolbar"/>
+
+    <style name="DeviceRow" parent="Fogg.Row"/>
+    <style name="DeviceRowLabel" parent="Fogg.Row.Label"/>
+    <style name="DeviceRowValue" parent="Fogg.Row.Value"/>
+    <style name="DeviceRowDivider" parent="Fogg.Divider"/>
+    <!-- Was a "›" TextView; now a real vector chevron. -->
+    <style name="DeviceRowChevron" parent="Fogg.Row.Chevron"/>
+
+    <style name="MetricValue" parent="Fogg.MetricValue"/>
+    <style name="MetricLabel" parent="Fogg.MetricUnit"/>
+
+    <style name="ButtonPrimary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">?attr/foggAccent</item>
+        <item name="android:textColor">?attr/foggOnAccent</item>
+        <item name="cornerRadius">?attr/foggRadiusButton</item>
+        <item name="android:textAppearance">?attr/foggTextButton</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">14dp</item>
+    </style>
+
+    <style name="ButtonSecondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">?attr/foggAccent</item>
+        <item name="android:textColor">?attr/foggAccent</item>
+        <item name="cornerRadius">?attr/foggRadiusButton</item>
+        <item name="android:textAppearance">?attr/foggTextButton</item>
+    </style>
+
+    <style name="ButtonDanger" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">?attr/foggDanger</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="cornerRadius">?attr/foggRadiusButton</item>
+        <item name="android:textAppearance">?attr/foggTextButton</item>
+    </style>
+
+    <style name="ButtonSuccess" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">?attr/foggSuccess</item>
+        <item name="android:textColor">?attr/foggOnAccent</item>
+        <item name="cornerRadius">?attr/foggRadiusButton</item>
+        <item name="android:textAppearance">?attr/foggTextButton</item>
+    </style>
+</resources>

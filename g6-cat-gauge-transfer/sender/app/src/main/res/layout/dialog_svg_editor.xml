@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/foggBgSurface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Live Preview -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:background="?attr/foggBgPrimary"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/imgSvgPreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:scaleType="fitCenter"/>
+        </FrameLayout>
+
+        <!-- Color Tint -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/recolor"
+            android:textColor="?attr/foggTextSecondary"
+            android:textAppearance="?attr/foggTextCaption"
+            android:textStyle="bold"
+            android:letterSpacing="0.08"
+            android:layout_marginBottom="6dp"/>
+
+        <LinearLayout
+            android:id="@+id/svgColorPalette"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Battery Options (Conditional) -->
+        <LinearLayout
+            android:id="@+id/containerBatteryOpts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/battery_levels"
+                android:textColor="?attr/foggTextSecondary"
+                android:textAppearance="?attr/foggTextCaption"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:layout_marginBottom="4dp"/>
+
+            <SeekBar
+                android:id="@+id/seekLevels"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:min="1"
+                android:max="10"
+                android:progress="5"
+                android:progressTint="?attr/foggAccent"
+                android:thumbTint="?attr/foggAccent"
+                android:layout_marginBottom="4dp"/>
+             
+            <TextView
+                android:id="@+id/txtLevelsVal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5 levels"
+                android:textColor="?attr/foggTextPrimary"
+                android:layout_gravity="end"
+                android:layout_marginBottom="12dp"/>
+
+            <CheckBox
+                android:id="@+id/chkClipVertical"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/clip_vertical"
+                android:textColor="?attr/foggTextPrimary"
+                android:buttonTint="?attr/foggAccent"
+                android:checked="true"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
