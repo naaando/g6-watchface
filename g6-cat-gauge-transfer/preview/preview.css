@@ -19,8 +19,15 @@ body {
 
 h1 {
   font-size: 1.4rem;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   color: #fff;
+}
+
+.dial-label {
+  font-size: 0.78rem;
+  color: #7a7a99;
+  margin-bottom: 16px;
+  text-align: center;
 }
 
 .watchface-container {

@@ -8,6 +8,7 @@
 </head>
 <body>
   <h1>G6 Watchface Preview</h1>
+  <div id="dial-label" class="dial-label"></div>
 
   <div class="comparison-row">
     <div class="watchface-container">
@@ -94,6 +95,22 @@
       const canvas = document.getElementById('watchface-canvas');
       const statusEl = document.getElementById('status');
       const errorOverlay = document.getElementById('error-overlay');
+
+      // Name the active dial in the header so a screenshot is self-identifying.
+      const dialLabelEl = document.getElementById('dial-label');
+      if (WATCHFACE_CONFIG.dialLabel) {
+        dialLabelEl.textContent = WATCHFACE_CONFIG.dialLabel;
+      }
+
+      // An unrecognised ?dial= is a user error, not a rendering problem, so
+      // surface it on the canvas rather than quietly showing the default dial.
+      if (WATCHFACE_CONFIG.dialError) {
+        statusEl.textContent = WATCHFACE_CONFIG.dialError;
+        statusEl.className = 'status error';
+        errorOverlay.textContent = WATCHFACE_CONFIG.dialError;
+        errorOverlay.style.display = 'flex';
+        return;
+      }
 
       // Check Canvas 2D support
       const ctx = canvas.getContext && canvas.getContext('2d');

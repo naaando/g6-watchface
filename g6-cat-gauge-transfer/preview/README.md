@@ -14,6 +14,34 @@ firefox index.html
 google-chrome index.html
 ```
 
+### Switching dials
+
+Append `?dial=<id>` to the URL:
+
+```
+open 'index.html?dial=11448'
+```
+
+| id | Dial |
+|---|---|
+| `cat-gauge-analog-test` | Default. The current build, with swappable art. |
+| `11448` | `0.0_AM05_G6_11448.bin`, a stock Trek 1 dial. |
+
+Only dials whose **geometry is identical** belong in the selector — same block
+types, sizes, positions and `ctx`/`cty`. Those differ only in artwork, so
+switching is just a matter of pointing `src` at different PNGs. This was
+verified block by block: `0.0_AM05_G6_11448` and `cat_gauge_analog_test` match
+on all 8 blocks, including the arms.
+
+A dial with *different* geometry needs its own `config.js` and its own
+`dial_desc.json`, since the descriptor is what the compiler packs and what
+`validate-preview-assets.py` checks against. An unrecognised `?dial=` shows an
+error rather than silently falling back to the default.
+
+To add a dial, copy its decoded assets under `assets/dials/<id>/` and add an
+entry to `DIAL_ASSET_SETS` in `config.js`. The validator checks that every file
+the selector can point at exists.
+
 ## What's Real vs Simulated
 
 ### Real Data (from BIN / dial_desc.json)
@@ -21,6 +49,7 @@ google-chrome index.html
 | Layer | Source | Description |
 |-------|--------|-------------|
 | Background | `assets/cat-background.png` | 466×466 background image (art swapped freely; the filename need not match the BIN) |
+| Background (`?dial=11448`) | `assets/dials/11448/background.png` | 466×466 background from the stock Trek 1 dial |
 | Battery | `assets/battery_strip.png` | 6-frame battery indicator (0-5) |
 | Steps | `assets/steps.png` | 10-frame step counter (0-9) |
 | Progress | `assets/progress2.png` | 11-frame progress ring (0-10) |
@@ -142,13 +171,16 @@ preview/
 └── assets/             # Layer images
     ├── cat-background.png  # Active background (art is swappable)
     ├── background.png      # Original background from the BIN
+    ├── ramen-background.png
     ├── animpart.png        # BLK_ANIMPART vertical strip (6 frames)
     ├── battery_strip.png
     ├── steps.png
     ├── progress2.png
     ├── arm_hour.png
     ├── arm_minute.png
-    └── arm_second.png
+    ├── arm_second.png
+    └── dials/
+        └── 11448/       # Decoded assets for 0.0_AM05_G6_11448.bin
 ```
 
 ## Reference Image

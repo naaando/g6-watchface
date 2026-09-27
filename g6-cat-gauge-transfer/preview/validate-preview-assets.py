@@ -246,6 +246,46 @@ def validate(config, dial_desc):
     return errors
 
 
+def extract_dial_asset_sets(config_path):
+    """Extract the DIAL_ASSET_SETS src map from config.js.
+
+    Only the `src` overrides are recovered, keyed by dial id. These dials share
+    the current descriptor's geometry exactly, so the block/geometry checks in
+    validate() already cover them; what needs checking here is that each file
+    the selector can point at actually exists, since a typo would only surface
+    as a broken image in the browser.
+    """
+    with open(config_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    match = re.search(
+        r"const\s+DIAL_ASSET_SETS\s*=\s*(\{[\s\S]*?\n\})\s*;",
+        content,
+    )
+    if not match:
+        return {}
+
+    text = match.group(1)
+    text = re.sub(r"/\*[\s\S]*?\*/", "", text)
+    text = re.sub(r"(?m)//[^\n]*$", "", text)
+    text = re.sub(r"([{,]\s*)([a-zA-Z_]\w*)\s*:", r'\1"\2":', text)
+    text = re.sub(r"'([^']*)'", r'"\1"', text)
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+
+    try:
+        sets = json.loads(text)
+    except json.JSONDecodeError:
+        # A parse failure here is not fatal on its own: the dial selector is a
+        # convenience, and the primary WATCHFACE_CONFIG checks still ran.
+        return {}
+
+    return {
+        dial_id: entry.get("src", {})
+        for dial_id, entry in sets.items()
+        if isinstance(entry, dict)
+    }
+
+
 def main():
     # ── Load config.js ────────────────────────────────────────────────────────
     if not os.path.isfile(CONFIG_PATH):
@@ -254,6 +294,19 @@ def main():
     config, err = extract_config(CONFIG_PATH)
     if err:
         fail([err])
+
+    # ── Check the dial selector's files exist ─────────────────────────────────
+    dial_errors = []
+    dial_sets = extract_dial_asset_sets(CONFIG_PATH)
+    for dial_id, src_map in dial_sets.items():
+        for layer_name, src in src_map.items():
+            if not os.path.isfile(os.path.join(PREVIEW_DIR, src)):
+                dial_errors.append(
+                    f"Dial '{dial_id}' layer '{layer_name}': "
+                    f"asset file not found: {src}"
+                )
+    if dial_errors:
+        fail(dial_errors)
 
     # ── Load dial_desc.json ───────────────────────────────────────────────────
     if not os.path.isfile(DIAL_DESC_PATH):
