@@ -24,15 +24,20 @@ says why.
 |---|---|
 | Digits, weekday rows, month names, any single glyph | `scripts/make_digit_strip.py` |
 | A hand sprite, with the pivot and `ctx`/`cty` computed for you | `scripts/make_hand_sprite.py` |
+| The battery/pulse ring gauge, 6 frames | `scripts/make_battery_gauge.py` |
+| The 12-icon weather strip | `scripts/make_weather_icons.py` |
 
-Run `python3 <script> --help` for the full flags. Both take `--json` and report
+Run `python3 <script> --help` for the full flags. All take `--json` and report
 what they built, including per-frame alpha bounding boxes — use it to check the
 result rather than trusting that a file appeared.
 
-Not yet ported from the designer: the battery/progress gauge
-(`BatteryGenerator.tsx`), the weather icons (`WeatherGenerator.tsx`), and the
-two slicers (`AnimationSlicer.tsx`, `SpriteSlicerModal.tsx`). Until then, build
-those in the designer and copy the PNG out.
+Not yet ported from the designer: the two slicers (`AnimationSlicer.tsx`,
+`SpriteSlicerModal.tsx`). Build those in the designer and copy the PNG out.
+
+`_g6canvas.py` is a shared drawing helper, not a public interface. It exists
+because Pillow's `ImageDraw` is aliased and replaces pixels on an RGBA image
+instead of blending, so it renders at 4x and downsamples with LANCZOS. Use it
+if you add a generator.
 
 ## The two rules that matter most
 
@@ -49,6 +54,13 @@ ctx`. And on a hand block `posx`/`posy` is where the **pivot** goes on screen,
 not the top-left of the sprite. `make_hand_sprite.py` prints all of it; there is
 no reason to compute it by hand.
 
+**A frame index is a code, and frame 0 is almost never the design.** The gauge
+picks the battery frame from a percentage band, and frame 0 is the *empty*
+frame — usually red. A gauge whose frame 0 is the intended design looks right
+all day and is right by accident at 4%. The weather block is indexed by weather
+code: `make_weather_icons.py --list` prints the twelve, and array position must
+equal the code, so sunny cannot live at frame 0.
+
 ## Start here
 
 1. `make_digit_strip.py` for the time, passing `--block-type` so the frame count
@@ -63,11 +75,12 @@ no reason to compute it by hand.
 python3 scripts/test_assets.py
 ```
 
-51 checks encoding the failures that are invisible on screen: a sideways strip,
+104 checks encoding the failures that are invisible on screen: a sideways strip,
 a glyph flush against the cell edge, a frozen frame, a tofu box where a digit
-should be, a hand rotating about half a pixel off-centre. Run it after touching
-anything here, and if you add a check, confirm it fails when you break the thing
-it guards.
+should be, a hand rotating about half a pixel off-centre, a weather icon one
+frame off its code, a battery strip whose every frame is the same picture. Run
+it after touching anything here, and if you add a check, confirm it fails when
+you break the thing it guards.
 
 To see a dial whole, use the Fogg designer (`Fogg/dial-designer/`, `npm run dev`)
 — it is also the only way to get a `.bin` back out. Its preview has known gaps
