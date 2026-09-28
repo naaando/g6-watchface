@@ -62,6 +62,14 @@
       "bytes": 465164,
       "sha": "2a6c1668dc07",
       "blocks": 8
+    },
+    {
+      "file": "silver-cat.bin",
+      "label": "Gatinho prateado (hora digital)",
+      "bytes": 272832,
+      "sha": "31dc1b3ee9fb",
+      "blocks": 16,
+      "note": "Hora digital acima do gatinho; aguardando teste no G6"
     }
   ]
 }
