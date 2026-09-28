@@ -1,7 +1,7 @@
 # dials/
 
 The dial gallery. One curated `.bin` per watchface design in the repository, so
-the preview can offer them in a dropdown instead of asking anyone to hunt
+you can pick from one folder in the designer's file dialog instead of hunting
 through six directories of duplicates.
 
 ## Why these files exist twice
@@ -28,6 +28,7 @@ source is obvious.
 | `cat-gauge-image-test.bin` | `trek-watchfaces/cat-gauge-image-test/` | Background-image-only test |
 | `roundtrip_11359.bin` | `trek-watchfaces/` | 11359 decoded and recompiled, to prove the round trip is lossless |
 | `roundtrip_11448.bin` | `trek-watchfaces/` | Same for 11448 |
+| `silver-cat.bin` | `trek-watchfaces/silver-cat/` | Silver cat with live digital time, built from the 618808 template |
 
 `manifest.json` is generated. Do not edit it by hand and expect it to stick —
 `label` and `note` survive regeneration, but every other field is overwritten:
@@ -41,12 +42,11 @@ python3 tools/build-dial-manifest.py --check  # fail if stale
 
 1. Copy the `.bin` into this folder.
 2. Run `python3 tools/build-dial-manifest.py`.
-3. Reload the preview. The select picks it up on its own.
+3. Pick it in the designer's *Decompile Existing Dial* dialog.
 
 ## What is published
 
-`tools/tunnel.sh` puts this folder on a public URL. The server that fronts it
-allows `.bin` files and `manifest.json` out of this directory and nothing
-else, so this README and the generator are not published even though they live
-here. That restriction is why the generator sits in `tools/` instead: `dials/`
-is data, `tools/` is code.
+`tools/tunnel.sh` publishes the designer, not this folder. `tools/serve.py` is
+handed one directory — `Fogg/dial-designer/dist` — so nothing here reaches a
+public URL, and neither does the rest of the repository.
+

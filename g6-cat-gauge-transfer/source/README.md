@@ -10,16 +10,19 @@ The BIN compiled and decoded successfully. All eight block layouts match the off
 
 The previews approximate the device's hand rotation; the BIN has not yet been installed or tested on the G6.
 
-## Validação de assets da prévia
+## Onde conferir o resultado
 
-O sistema de prévia vive em `preview/` na raiz do repositório, não neste pacote.
-`authoring.html` é a página para trocar a arte antes de compilar; `index.html` abre
-qualquer `.bin` e não precisa de nenhum passo de conversão.
+O sistema de prévia foi removido em 2026-09-28; a verificação acontece agora no
+editor do Fogg (`Fogg/dial-designer/`, na raiz do repositório), que abre qualquer
+`.bin` e recompila para `.bin`. As notas de formato e a lista de defeitos do
+renderizador estão em
+[`docs/fogg-dial-format-and-renderer-bugs.md`](../../docs/fogg-dial-format-and-renderer-bugs.md).
 
-Antes de recompilar o BIN, valide os assets:
+Antes de recompilar, confira que `../assets/dial_desc.json` e os PNGs em
+`../assets/` concordam em número, nome e dimensões:
 
 ```bash
-python3 ../../preview/validate-preview-assets.py
+python3 -c "import json;d=json.load(open('../assets/dial_desc.json'));print(len(d['blocks']),'blocos');[print('  ',b['type'],b['fname'],f\"{b['width']}x{b['height']}\") for b in d['blocks']]"
 ```
 
-Isso garante que os PNGs em `preview/assets/` estão consistentes com `../assets/dial_desc.json` e que o canvas é 466×466. Após a validação, copie os assets atualizados para `assets/` e execute o compilador.
+Cada bloco, menos `BLK_PREV`, deve ter o PNG correspondente em `../assets/`.

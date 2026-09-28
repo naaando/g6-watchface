@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 #
-# Publish the G6 dial preview on a public https URL via a Cloudflare quick
+# Publish the Fogg dial designer on a public https URL via a Cloudflare quick
 # tunnel. No Cloudflare account, no domain, no config file: cloudflared hands
 # back a random trycloudflare.com hostname that lives as long as the process.
 #
-# What gets published is deliberately narrow. tools/serve-preview.py is an
-# allowlist server: it exposes preview/ and dials/ and 404s everything else,
-# so the repo's .git, Fogg/ and ble-capture/ are not reachable even though the
-# tunnel is public and the URL is guessable.
+# What gets published is the designer's production build and nothing else.
+# tools/serve.py is handed one directory, Fogg/dial-designer/dist, so the
+# repository's .git, Fogg/ source and ble-capture/ are not reachable even
+# though the tunnel is public and the URL is guessable. A dev server is not
+# used, because a dev server also serves node_modules and the source tree.
+#
+# The page fetches Pyodide from a CDN at runtime, so a viewer needs internet
+# access; the first load pulls a few MB of wheel.
 #
 # Usage:
-#   tools/tunnel.sh              # serve on 8000, print the public URL
-#   tools/tunnel.sh 9000         # a different local port
+#   tools/tunnel.sh                     # build, serve on 8000, print the URL
+#   tools/tunnel.sh 9000                # a different local port
+#   tools/tunnel.sh 8000 --no-build     # reuse the existing dist/
 #   tools/tunnel.sh 8000 --no-cloudflared    # just the local server
 #
 # The quick tunnel URL changes every run, so do not bookmark it.
@@ -22,9 +27,43 @@ PORT="${1:-8000}"
 shift || true
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
+DESIGNER="$REPO/Fogg/dial-designer"
+DIST="$DESIGNER/dist"
+
+BUILD=1
+CLOUDFLARED=1
+for arg in "$@"; do
+  case "$arg" in
+    --no-build) BUILD=0 ;;
+    --no-cloudflared) CLOUDFLARED=0 ;;
+    *) echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+if [ ! -d "$DESIGNER" ]; then
+  echo "no designer at $DESIGNER" >&2
+  exit 1
+fi
+
 cd "$REPO"
 
-LOG="${TMPDIR:-/tmp}/g6-preview-tunnel.log"
+if [ "$BUILD" -eq 1 ]; then
+  # npm ci would wipe node_modules and take minutes; the lockfile is only
+  # consulted when node_modules is missing, which is the case that matters.
+  if [ ! -d "$DESIGNER/node_modules" ]; then
+    echo "installing designer dependencies..." >&2
+    npm --prefix "$DESIGNER" ci
+  fi
+  echo "building the designer..." >&2
+  npm --prefix "$DESIGNER" run build >/dev/null
+fi
+
+if [ ! -f "$DIST/index.html" ]; then
+  echo "no build at $DIST/index.html. Run without --no-build." >&2
+  exit 1
+fi
+
+LOG="${TMPDIR:-/tmp}/g6-designer-tunnel.log"
 : > "$LOG"
 
 pids=()
@@ -37,7 +76,7 @@ trap cleanup EXIT INT TERM
 
 # Started as a child of this script, not as a detached subshell, so the trap
 # above can actually reap it.
-python3 tools/serve-preview.py --port "$PORT" >"$LOG" 2>&1 &
+python3 tools/serve.py "$DIST" --port "$PORT" --quiet >>"$LOG" 2>&1 &
 pids+=($!)
 
 # Give the local server a moment so the tunnel does not announce a URL that
@@ -51,9 +90,9 @@ fi
 
 echo "local:  http://127.0.0.1:$PORT/"
 
-if [ "${1:-}" = "--no-cloudflared" ]; then
+if [ "$CLOUDFLARED" -eq 0 ]; then
   echo
-  echo "serving locally only. log: $LOG"
+  echo "serving locally only. Ctrl-C stops it."
   wait "${pids[0]}"
   exit 0
 fi
@@ -66,7 +105,7 @@ if ! command -v cloudflared >/dev/null 2>&1; then
 fi
 
 # --no-autoupdate because cloudflared reaching out to its own release channel
-# mid-tunnel is a surprising way to lose a preview.
+# mid-tunnel is a surprising way to lose a session.
 cloudflared tunnel --no-autoupdate --url "http://127.0.0.1:$PORT" >>"$LOG" 2>&1 &
 pids+=($!)
 
@@ -94,7 +133,7 @@ cat <<EOF
   public: $URL
   local:  http://127.0.0.1:$PORT/
 
-  The public URL serves preview/ and dials/ only, and nothing else in the
+  The public URL serves the designer's build and nothing else in the
   repository. It changes every run. Ctrl-C stops both processes.
 
 EOF

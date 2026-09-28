@@ -2,20 +2,18 @@
 """
 Regenerate dials/manifest.json from whatever .bin files are in dials/.
 
-The manifest is what turns `dials/` into a browsable gallery: the preview
-page fetches it and fills a <select> with one entry per dial. Dropping a new
-.bin into the folder and re-running this script is the whole workflow for
-adding a dial to the gallery.
+The manifest is the catalogue of dials/: what each one is called, how big it
+is, how many blocks it has, and where it came from. It is what makes the folder
+browsable rather than just a pile of binaries.
 
 It lives in tools/ rather than next to the dials so that dials/ holds nothing
-but dial data: tools/serve-preview.py serves that folder to a public tunnel,
-and the only things it lets out are .bin files and this manifest.
+but dial data.
 
-Standard library only, so it runs anywhere the preview runs.
+Standard library only.
 
 The block count is read straight from the header rather than by decoding:
 byte 2 is `num_blocks` and bytes 0-1 are the paletted-table size, which is
-enough to describe a dial in a dropdown without decoding 600 KB of pixels.
+enough to describe a dial without decoding 600 KB of pixels.
 
 Hand-written `label` and `note` fields are preserved across regeneration, so
 the script can be re-run freely without losing prose.

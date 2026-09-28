@@ -1,5 +1,12 @@
 # G6 Watchface Interactive Preview Implementation Plan
 
+> **Historical.** This plan was executed in full, then superseded. The `preview/`
+> it describes was removed on 2026-09-28 in favour of testing inside the Fogg
+> dial designer, which can also compile back to a `.bin` and this one could not.
+> The format notes gathered along the way are in
+> `docs/fogg-dial-format-and-renderer-bugs.md`. Kept as a record; the paths
+> below no longer exist.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Criar uma preview local e interativa que reproduza o watchface do G6/Trek 1 em 466×466 pixels, usando os mesmos componentes e posições do BIN real.

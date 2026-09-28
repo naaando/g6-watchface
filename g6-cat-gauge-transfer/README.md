@@ -15,45 +15,43 @@ Este pacote contém o watchface de teste inspirado no medidor do Need for Speed 
 
 ## Workflow completo: edição → compilação → verificação → APK
 
-### 1. Editar a prévia (opcional)
+### 1. Editar e conferir no editor
 
-O sistema de prévia fica em `preview/`, na raiz do repositório — não é específico deste pacote.
+O editor fica em `Fogg/dial-designer/`, um clone de terceiros — não é específico deste pacote:
 
 ```bash
 # A partir da raiz do projeto
-open preview/index.html     # abre qualquer .bin, decodifica no navegador
-open preview/authoring.html # troca a arte contra uma geometria fixa, antes de compilar
+cd Fogg/dial-designer
+npm install
+npm run dev
 ```
 
-`authoring.html` usa `config.js` (posições, dimensões e rotações) e os assets em `preview/assets/`. Para modificar o visual, edite os PNGs em `preview/assets/` e ajuste `config.js` conforme necessário.
+Clique em **Decompile Existing Dial** e escolha `dials/cat-gauge-analog-test.bin`
+(ou qualquer outro `.bin` de `dials/`). Ele decompila em camadas selecionáveis
+e recompila para `.bin` com **Compile & Download .bin**.
 
-`index.html` é o caminho rápido para conferir o resultado: escolha o `.bin` e ele é lido direto no navegador, sem etapa de conversão.
+Para trocar só a arte antes de compilar, edite os PNGs em `assets/` deste
+pacote — as posições e dimensões vêm de `assets/dial_desc.json`, e é ele que o
+compilador lê.
 
-### 2. Validar assets da prévia
+Atenção: o editor é um **visualizador**. As complicações vêm de valores mock,
+e alguns estão errados de um jeito que importa (o mês fica fixado em maio, o
+contador de passos perde o dígito da frente, o anel de pulso segue o slider de
+bateria). A lista completa, com arquivo e linha, está em
+[`docs/fogg-dial-format-and-renderer-bugs.md`](../docs/fogg-dial-format-and-renderer-bugs.md).
 
-Antes de compilar, verifique se todos os assets estão corretos e consistentes com o `dial_desc.json`:
+### 2. Validar assets
+
+O `dial_desc.json` é a fonte da geometria. Confira antes de compilar:
 
 ```bash
-python3 preview/validate-preview-assets.py
+python3 -c "import json;d=json.load(open('assets/dial_desc.json'));print(len(d['blocks']),'blocos');[print(f\"  {b['type']:<16} {b['width']}x{b['height']} frms={b['frms']} @ {b['posx']},{b['posy']}\") for b in d['blocks']]"
 ```
 
-Saída esperada: `preview assets: PASS`
+Todos os blocos, menos `BLK_PREV`, devem ter um PNG correspondente em `assets/`
+com o mesmo nome de arquivo (`fname`).
 
-O script verifica:
-- Todos os arquivos referenciados em `config.js` existem em `preview/assets/`
-- O canvas é 466×466
-- Os nomes dos blocos correspondem ao `dial_desc.json`
-- Todos os blocos do `dial_desc.json` (exceto `BLK_PREV`) têm uma camada correspondente em `config.js`
-
-### 3. Exportar assets para compilação
-
-Copie os PNGs de `preview/assets/` para `assets/` (o diretório usado pelo compilador):
-
-```bash
-cp ../preview/assets/*.png assets/
-```
-
-### 4. Compilar o BIN
+### 3. Compilar o BIN
 
 Use o script de compilação em `source/` para gerar o BIN a partir de `assets/dial_desc.json`:
 
@@ -62,7 +60,7 @@ cd source
 python3 compile.py  # ou o script de compilação disponível
 ```
 
-### 5. Verificar os 8 blocos
+### 4. Verificar os 8 blocos
 
 Após a compilação, valide se os 8 blocos do BIN correspondem ao `dial_desc.json`:
 
@@ -70,14 +68,14 @@ Após a compilação, valide se os 8 blocos do BIN correspondem ao `dial_desc.js
 python3 source/validate-bin.py  # se disponível
 ```
 
-### 6. Construir o APK
+### 5. Construir o APK
 
 ```bash
 cd sender
 ./gradlew assembleDebug -PbuildPython=/opt/homebrew/bin/python3.12
 ```
 
-### 7. Instalar e testar
+### 6. Instalar e testar
 
 ```bash
 adb install -r sender/app/build/outputs/apk/debug/app-debug.apk
@@ -91,7 +89,7 @@ adb install -r sender/app/build/outputs/apk/debug/app-debug.apk
 4. Não use OTA, atualização de firmware, `Update Resource`, restauração ou funções equivalentes.
 5. Se o envio falhar, feche o remetente, abra o AuraFit e reconecte o relógio por ele.
 
-O BIN ainda não foi enviado ao G6 nesta sessão. A prévia e a validação binária passaram; a transferência real continua sendo o próximo teste controlado.
+O BIN ainda não foi enviado ao G6 nesta sessão. A decodificação e a validação binária passaram; a transferência real continua sendo o próximo teste controlado.
 
 ## Integridade
 
